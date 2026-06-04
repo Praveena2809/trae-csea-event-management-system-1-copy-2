@@ -1,12 +1,19 @@
 @import "tailwindcss";
 
-/* Small app-wide improvements */
+@custom-variant dark (&:where(.dark, .dark *));
+
 html,
 body,
 #root {
   height: 100%;
 }
 
+/* Keep your same aesthetic */
 body {
-  @apply bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100;
+  @apply bg-slate-50 text-slate-800;
+}
+
+/* Dark mode */
+.dark body {
+  @apply bg-slate-950 text-slate-100;
 }

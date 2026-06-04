@@ -22,7 +22,10 @@ export default function MyEvents() {
   });
   const [subPoster, setSubPoster] = useState(null);
   const [availability, setAvailability] = useState(null);
-
+  //added next 3 lines as new
+  const [registrationsMap, setRegistrationsMap] = useState({});
+  const [winnerSelections, setWinnerSelections] = useState({});
+  const [runnerSelections, setRunnerSelections] = useState({});
   const load = async () => {
     const [{ data: e }, { data: v }] = await Promise.all([api.get("/events/me/list"), api.get("/venues")]);
     setEvents(e.events || []);
@@ -46,7 +49,73 @@ export default function MyEvents() {
       setAvailability({ error: err?.response?.data?.message || "Failed" });
     }
   };
-
+  const loadRegistrations = async (
+    subeventId
+  ) => {
+    try {
+      const { data } =
+        await api.get(
+          `/registrations/subevent/${subeventId}`
+        );
+  
+      setRegistrationsMap(
+        (prev) => ({
+          ...prev,
+          [subeventId]:
+            data.registrations ||
+            [],
+        })
+      );
+    } catch (err) {
+      console.error(err);
+    }
+  };
+  
+  const saveResults = async (
+    subeventId
+  ) => {
+    try {
+      await api.patch(
+        `/events/subevents/${subeventId}/winners`,
+        {
+          winnerRegistrationId:
+            winnerSelections[
+              subeventId
+            ] || null,
+  
+          runnerRegistrationId:
+            runnerSelections[
+              subeventId
+            ] || null,
+        }
+      );
+  
+      toast.success(
+        "Results saved"
+      );
+    } catch (err) {
+      toast.error(
+        err?.response?.data
+          ?.message ||
+          "Failed to save results"
+      );
+    }
+  };
+  
+  const canDeclareResults = (
+    subevent
+  ) => {
+    return (
+      subevent.type ===
+        "competitive" &&
+      subevent.status ===
+        "approved" &&
+      new Date() >
+        new Date(
+          subevent.endAt
+        )
+    );
+  };
   const onCreateSubevent = async (e) => {
     e.preventDefault();
     if (!creatingFor) return;
@@ -94,7 +163,7 @@ export default function MyEvents() {
         </button>
       </div>
 
-      <div className="space-y-3">
+      {/* <div className="space-y-3">
         {events.map((e) => (
           <div key={e._id} className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -117,7 +186,226 @@ export default function MyEvents() {
         ))}
 
         {!events.length && <p className="text-sm text-slate-600 dark:text-slate-300">No events created yet.</p>}
+      </div> */}
+      <div className="space-y-3">
+  {events.map((e) => (
+    <div
+      key={e._id}
+      className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
+    >
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p className="font-semibold text-slate-900 dark:text-white">
+            {e.name}
+          </p>
+
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            {e.description}
+          </p>
+
+          <p className="mt-2 text-xs text-slate-500">
+            Status:
+            <span className="ml-1 font-semibold">
+              {e.status}
+            </span>
+
+            {e.rejectionReason
+              ? ` • Reason: ${e.rejectionReason}`
+              : ""}
+          </p>
+        </div>
+
+        <button
+          onClick={() =>
+            setCreatingFor(e._id)
+          }
+          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Add Subevent
+        </button>
       </div>
+
+      {/* Subevents */}
+      <div className="mt-4 space-y-3">
+        {e.subevents?.map(
+          (sub) => (
+            <div
+              key={sub._id}
+              className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900"
+            >
+              <p className="font-medium text-slate-900 dark:text-white">
+                {sub.name}
+              </p>
+
+              <p className="text-sm text-slate-500">
+                {sub.type} •{" "}
+                {sub.status}
+              </p>
+
+              {canDeclareResults(
+                sub
+              ) && (
+                <div className="mt-4 space-y-3">
+                  {!registrationsMap[
+                    sub._id
+                  ] && (
+                    <button
+                      onClick={() =>
+                        loadRegistrations(
+                          sub._id
+                        )
+                      }
+                      className="rounded-md bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700"
+                    >
+                      Load Participants
+                    </button>
+                  )}
+
+                  {registrationsMap[
+                    sub._id
+                  ] && (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Winner
+                        </label>
+
+                        <select
+                          value={
+                            winnerSelections[
+                              sub._id
+                            ] || ""
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            setWinnerSelections(
+                              (
+                                prev
+                              ) => ({
+                                ...prev,
+                                [sub._id]:
+                                  e
+                                    .target
+                                    .value,
+                              })
+                            )
+                          }
+                          className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                        >
+                          <option value="">
+                            Select Winner
+                          </option>
+
+                          {registrationsMap[
+                            sub._id
+                          ]?.map(
+                            (
+                              r
+                            ) => (
+                              <option
+                                key={
+                                  r._id
+                                }
+                                value={
+                                  r._id
+                                }
+                              >
+                                {
+                                  r
+                                    .participant
+                                    ?.name
+                                }
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium">
+                          Runner
+                        </label>
+
+                        <select
+                          value={
+                            runnerSelections[
+                              sub._id
+                            ] || ""
+                          }
+                          onChange={(
+                            e
+                          ) =>
+                            setRunnerSelections(
+                              (
+                                prev
+                              ) => ({
+                                ...prev,
+                                [sub._id]:
+                                  e
+                                    .target
+                                    .value,
+                              })
+                            )
+                          }
+                          className="mt-1 w-full rounded-md border px-3 py-2 text-black"
+                        >
+                          <option value="">
+                            Select Runner
+                          </option>
+
+                          {registrationsMap[
+                            sub._id
+                          ]?.map(
+                            (
+                              r
+                            ) => (
+                              <option
+                                key={
+                                  r._id
+                                }
+                                value={
+                                  r._id
+                                }
+                              >
+                                {
+                                  r
+                                    .participant
+                                    ?.name
+                                }
+                              </option>
+                            )
+                          )}
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          saveResults(
+                            sub._id
+                          )
+                        }
+                        className="rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700"
+                      >
+                        Save Results
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        )}
+      </div>
+    </div>
+  ))}
+
+  {!events.length && (
+    <p className="text-sm text-slate-600 dark:text-slate-300">
+      No events created yet.
+    </p>
+  )}
+</div>
 
       {creatingFor && (
         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900">

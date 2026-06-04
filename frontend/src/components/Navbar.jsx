@@ -43,13 +43,21 @@ export default function Navbar({ onToggleTheme, theme }) {
         </nav>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
-          >
-            {theme === "dark" ? "Light" : "Dark"}
-          </button>
+        <button
+  type="button"
+  onClick={() => {
+    console.log(
+      "theme before:",
+      theme
+    );
+    onToggleTheme();
+  }}
+  className="rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-200 dark:hover:bg-slate-900"
+>
+  {theme === "dark"
+    ? "☀️ Light"
+    : "🌙 Dark"}
+</button>
 
           {!user ? (
             <Link

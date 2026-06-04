@@ -104,10 +104,62 @@ export const updateMainEvent = asyncHandler(async (req, res) => {
   res.json({ event });
 });
 
-export const listMyEvents = asyncHandler(async (req, res) => {
-  const events = await Event.find({ createdBy: req.user._id }).sort({ createdAt: -1 });
-  res.json({ events });
-});
+// export const listMyEvents = asyncHandler(async (req, res) => {
+//   const events = await Event.find({ createdBy: req.user._id }).sort({ createdAt: -1 });
+//   res.json({ events });
+// });
+export const listMyEvents =
+  asyncHandler(async (req, res) => {
+    const events =
+      await Event.find({
+        createdBy:
+          req.user._id,
+      })
+        .sort({
+          createdAt: -1,
+        })
+        .lean();
+
+    const eventIds =
+      events.map(
+        (e) => e._id
+      );
+
+    const subevents =
+      await Subevent.find({
+        event: {
+          $in: eventIds,
+        },
+      })
+        .sort({
+          startAt: 1,
+        })
+        .lean();
+
+    const grouped = {};
+
+    for (const s of subevents) {
+      grouped[s.event] =
+        grouped[s.event] ||
+        [];
+
+      grouped[s.event].push(
+        s
+      );
+    }
+
+    res.json({
+      events: events.map(
+        (e) => ({
+          ...e,
+          subevents:
+            grouped[
+              e._id
+            ] || [],
+        })
+      ),
+    });
+  });
 
 export const createSubevent = asyncHandler(async (req, res) => {
   const { eventId } = req.params;
@@ -261,30 +313,164 @@ export const rejectSubevent = asyncHandler(async (req, res) => {
 });
 
 // Coordinator: update winner/runner registrations for competitive events
+// export const updateWinners = asyncHandler(async (req, res) => {
+//   const { id } = req.params; // subevent id
+//   const { winnerRegistrationId, runnerRegistrationId } = req.body;
+
+//   const subevent = await Subevent.findById(id).populate("event");
+//   if (!subevent) {
+//     res.status(404);
+//     throw new Error("Subevent not found");
+//   }
+
+//   // Ensure coordinator owns the parent event
+//   if (String(subevent.createdBy) !== String(req.user._id)) {
+//     res.status(403);
+//     throw new Error("You can update winners only for your subevents");
+//   }
+
+//   if (subevent.type !== "competitive") {
+//     res.status(400);
+//     throw new Error("Winners can be set only for competitive subevents");
+//   }
+
+//   subevent.winnerRegistration = winnerRegistrationId || undefined;
+//   subevent.runnerRegistration = runnerRegistrationId || undefined;
+//   await subevent.save();
+
+//   res.json({ subevent });
+// });
 export const updateWinners = asyncHandler(async (req, res) => {
   const { id } = req.params; // subevent id
-  const { winnerRegistrationId, runnerRegistrationId } = req.body;
 
-  const subevent = await Subevent.findById(id).populate("event");
+  const {
+    winnerRegistrationId,
+    runnerRegistrationId,
+  } = req.body;
+
+  const subevent = await Subevent.findById(
+    id
+  ).populate("event");
+
   if (!subevent) {
     res.status(404);
     throw new Error("Subevent not found");
   }
 
-  // Ensure coordinator owns the parent event
-  if (String(subevent.createdBy) !== String(req.user._id)) {
+  // coordinator ownership check
+  if (
+    String(subevent.createdBy) !==
+    String(req.user._id)
+  ) {
     res.status(403);
-    throw new Error("You can update winners only for your subevents");
+    throw new Error(
+      "You can update winners only for your subevents"
+    );
   }
 
+  // only for competitive events
   if (subevent.type !== "competitive") {
     res.status(400);
-    throw new Error("Winners can be set only for competitive subevents");
+    throw new Error(
+      "Winner/Runner only applies to competitive events"
+    );
   }
 
-  subevent.winnerRegistration = winnerRegistrationId || undefined;
-  subevent.runnerRegistration = runnerRegistrationId || undefined;
+  subevent.winnerRegistration =
+    winnerRegistrationId || null;
+
+  subevent.runnerRegistration =
+    runnerRegistrationId || null;
+
   await subevent.save();
 
-  res.json({ subevent });
+  res.json({
+    message:
+      "Winner and runner updated successfully",
+    subevent,
+  });
 });
+
+// Coordinator: open/close registrations
+export const toggleRegistrationStatus =
+  asyncHandler(
+    async (req, res) => {
+      const {
+        id,
+      } = req.params;
+
+      const subevent =
+        await Subevent.findById(
+          id
+        );
+
+      if (!subevent) {
+        res.status(404);
+        throw new Error(
+          "Subevent not found"
+        );
+      }
+
+      // only coordinator who created it
+      if (
+        String(
+          subevent.createdBy
+        ) !==
+        String(
+          req.user._id
+        )
+      ) {
+        res.status(403);
+        throw new Error(
+          "Unauthorized"
+        );
+      }
+
+      subevent.registrationsClosed =
+        !subevent.registrationsClosed;
+
+      await subevent.save();
+
+      res.json({
+        message:
+          subevent.registrationsClosed
+            ? "Registrations closed"
+            : "Registrations opened",
+        subevent,
+      });
+    }
+  );
+
+// Admin: delete event
+export const deleteEvent =
+  asyncHandler(
+    async (req, res) => {
+      const event =
+        await Event.findById(
+          req.params.id
+        );
+
+      if (!event) {
+        res.status(404);
+        throw new Error(
+          "Event not found"
+        );
+      }
+
+      // delete subevents too
+      await Subevent.deleteMany(
+        {
+          event:
+            event._id,
+        }
+      );
+
+      await event.deleteOne();
+
+      res.json({
+        message:
+          "Event deleted successfully",
+      });
+    }
+  );
+

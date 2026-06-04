@@ -37,10 +37,25 @@ export const AuthProvider = ({ children }) => {
     return data.user;
   };
 
-  const register = async (payload) => {
-    const { data } = await api.post("/auth/register", payload);
-    localStorage.setItem("token", data.token);
+  // const register = async (payload) => {
+  //   const { data } = await api.post("/auth/register", payload);
+  //   localStorage.setItem("token", data.token);
+  //   setUser(data.user);
+  //   return data.user;
+  // };
+  const signup = async (payload) => {
+    const { data } = await api.post(
+      "/auth/register",
+      payload
+    );
+  
+    localStorage.setItem(
+      "token",
+      data.token
+    );
+  
     setUser(data.user);
+  
     return data.user;
   };
 
@@ -49,11 +64,21 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // const value = useMemo(
+  //   () => ({ user, loading, login, register, logout, reload: loadMe }),
+  //   [user, loading]
+  // );
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, reload: loadMe }),
+    () => ({
+      user,
+      loading,
+      login,
+      signup,
+      logout,
+      reload: loadMe,
+    }),
     [user, loading]
   );
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 

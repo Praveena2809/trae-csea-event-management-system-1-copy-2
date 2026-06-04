@@ -13,7 +13,12 @@ import adminRoutes from "./routes/adminRoutes.js";
 
 export const app = express();
 
-app.use(helmet());
+//app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+);
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
