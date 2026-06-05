@@ -310,7 +310,7 @@ import { Feedback } from "../models/Feedback.js";
 import { Certificate } from "../models/Certificate.js";
 import { razorpay } from "../config/razorpay.js";
 import { generateCertificatePdfBuffer } from "../utils/certificatePdf.js";
-
+import { Event } from "../models/Event.js";
 const buildApiUrl = (path = "/") => {
   const base =
     process.env.API_URL ||
@@ -804,17 +804,115 @@ export const getSubeventRegistrations =
     });
   });
 
-export const markAttendanceByQr =
+// export const markAttendanceByQr =
+//   asyncHandler(async (req, res) => {
+//     const { qrToken } =
+//       req.body;
+
+//     const registration =
+//       await Registration.findOne(
+//         { qrToken }
+//       ).populate(
+//         "subevent"
+//       );
+
+//     if (!registration) {
+//       res.status(404);
+//       throw new Error(
+//         "Invalid QR"
+//       );
+//     }
+
+//     registration.status =
+//       "attended";
+
+//     registration.attendedAt =
+//       new Date();
+
+//     registration.checkedInBy =
+//       req.user._id;
+
+//     await registration.save();
+// // Get parent event
+// const event =
+//   await Event.findById(
+//     registration.event
+//   );
+
+// const now =
+//   new Date();
+
+// // Attendance manually closed
+// if (
+//   !event?.attendanceEnabled
+// ) {
+//   res.status(400);
+
+//   throw new Error(
+//     "Attendance is closed by coordinator"
+//   );
+// }
+
+// // Attendance expired
+// if (
+//   event.attendanceEnd &&
+//   now >
+//     new Date(
+//       event.attendanceEnd
+//     )
+// ) {
+//   res.status(400);
+
+//   throw new Error(
+//     "Attendance window closed"
+//   );
+// }
+
+//     await Attendance.findOneAndUpdate(
+//       {
+//         registration:
+//           registration._id,
+//       },
+//       {
+//         registration:
+//           registration._id,
+//         markedBy:
+//           req.user._id,
+//         markedAt:
+//           new Date(),
+//       },
+//       {
+//         upsert: true,
+//         new: true,
+//       }
+//     );
+
+  //   res.json({
+  //     message:
+  //       "Attendance marked",
+  //     registration,
+  //   });
+  // });
+  export const markAttendanceByQr =
   asyncHandler(async (req, res) => {
     const { qrToken } =
       req.body;
 
+    // const registration =
+    //   await Registration.findOne(
+    //     { qrToken }
+    //   ).populate(
+    //     "subevent"
+    //   );
     const registration =
-      await Registration.findOne(
-        { qrToken }
-      ).populate(
-        "subevent"
-      );
+  await Registration.findOne(
+    { qrToken }
+  ).populate({
+    path: "subevent",
+    populate: {
+      path: "event",
+    },
+  });
 
     if (!registration) {
       res.status(404);
@@ -823,6 +921,45 @@ export const markAttendanceByQr =
       );
     }
 
+    // Get parent event
+    // const event =
+    //   await Event.findById(
+    //     registration.event
+    //   );
+    const event =
+  registration.subevent
+    .event;
+
+    const now =
+      new Date();
+
+    // Attendance closed
+    if (
+      !event?.attendanceEnabled
+    ) {
+      res.status(400);
+
+      throw new Error(
+        "Attendance is closed by coordinator"
+      );
+    }
+
+    // Attendance expired
+    if (
+      event.attendanceEnd &&
+      now >
+        new Date(
+          event.attendanceEnd
+        )
+    ) {
+      res.status(400);
+
+      throw new Error(
+        "Attendance window closed"
+      );
+    }
+
+    // Mark registration attended
     registration.status =
       "attended";
 
@@ -834,6 +971,7 @@ export const markAttendanceByQr =
 
     await registration.save();
 
+    // Save attendance record
     await Attendance.findOneAndUpdate(
       {
         registration:
@@ -859,7 +997,6 @@ export const markAttendanceByQr =
       registration,
     });
   });
-
 export const submitFeedback =
   asyncHandler(async (req, res) => {
     const {

@@ -31,7 +31,49 @@ export default function MyEvents() {
     setEvents(e.events || []);
     setVenues(v.venues || []);
   };
+  const openAttendance =
+  async (eventId) => {
+    try {
+      const { data } =
+        await api.patch(
+          `/events/${eventId}/open-attendance`
+        );
 
+      toast.success(
+        data.message
+      );
+
+      load(); // refresh events
+    } catch (err) {
+      toast.error(
+        err?.response?.data
+          ?.message ||
+          "Failed to open attendance"
+      );
+    }
+  };
+
+const closeAttendance =
+  async (eventId) => {
+    try {
+      const { data } =
+        await api.patch(
+          `/events/${eventId}/close-attendance`
+        );
+
+      toast.success(
+        data.message
+      );
+
+      load(); // refresh events
+    } catch (err) {
+      toast.error(
+        err?.response?.data
+          ?.message ||
+          "Failed to close attendance"
+      );
+    }
+  };
   useEffect(() => {
     load();
   }, []);
@@ -213,16 +255,69 @@ export default function MyEvents() {
               ? ` • Reason: ${e.rejectionReason}`
               : ""}
           </p>
+          <div className="mt-2">
+  <span
+    className={`rounded px-2 py-1 text-xs text-white ${
+      e.attendanceEnabled
+        ? "bg-green-600"
+        : "bg-red-600"
+    }`}
+  >
+    {e.attendanceEnabled
+      ? "Attendance Open"
+      : "Attendance Closed"}
+  </span>
+</div>
         </div>
 
-        <button
+        {/* <button
           onClick={() =>
             setCreatingFor(e._id)
           }
           className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
         >
           Add Subevent
-        </button>
+        </button> */}
+        <div className="flex flex-wrap gap-2">
+  <button
+    onClick={() =>
+      setCreatingFor(
+        e._id
+      )
+    }
+    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+  >
+    Add Subevent
+  </button>
+
+  <button
+    onClick={() =>
+      openAttendance(
+        e._id
+      )
+    }
+    disabled={
+      e.attendanceEnabled
+    }
+    className="rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+  >
+    Open Attendance
+  </button>
+
+  <button
+    onClick={() =>
+      closeAttendance(
+        e._id
+      )
+    }
+    disabled={
+      !e.attendanceEnabled
+    }
+    className="rounded-md bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+  >
+    Close Attendance
+  </button>
+</div>
       </div>
 
       {/* Subevents */}

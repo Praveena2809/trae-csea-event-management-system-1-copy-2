@@ -440,7 +440,139 @@ export const toggleRegistrationStatus =
       });
     }
   );
+// Coordinator: Open attendance
+export const openAttendance =
+  asyncHandler(
+    async (req, res) => {
+      const event =
+        await Event.findById(
+          req.params.id
+        );
 
+      if (!event) {
+        res.status(404);
+        throw new Error(
+          "Event not found"
+        );
+      }
+
+      // only event creator coordinator
+      if (
+        String(
+          event.createdBy
+        ) !==
+        String(
+          req.user._id
+        )
+      ) {
+        res.status(403);
+        throw new Error(
+          "Unauthorized"
+        );
+      }
+
+      // already open
+      if (
+        event.attendanceEnabled
+      ) {
+        res.status(400);
+        throw new Error(
+          "Attendance already open"
+        );
+      }
+
+      const now =
+        new Date();
+
+      event.attendanceEnabled =
+        true;
+
+      event.attendanceOpenedBy =
+        req.user._id;
+
+      event.attendanceOpenedAt =
+        now;
+
+      // attendance starts now
+      event.attendanceStart =
+        now;
+
+      // auto-expire after 4 hours
+      event.attendanceEnd =
+        new Date(
+          now.getTime() +
+            4 *
+              60 *
+              60 *
+              1000
+        );
+
+      await event.save();
+
+      res.json({
+        message:
+          "Attendance opened successfully",
+        event,
+      });
+    }
+  );
+
+// Coordinator: Close attendance
+export const closeAttendance =
+  asyncHandler(
+    async (req, res) => {
+      const event =
+        await Event.findById(
+          req.params.id
+        );
+
+      if (!event) {
+        res.status(404);
+        throw new Error(
+          "Event not found"
+        );
+      }
+
+      // only event creator coordinator
+      if (
+        String(
+          event.createdBy
+        ) !==
+        String(
+          req.user._id
+        )
+      ) {
+        res.status(403);
+        throw new Error(
+          "Unauthorized"
+        );
+      }
+
+      // already closed
+      if (
+        !event.attendanceEnabled
+      ) {
+        res.status(400);
+        throw new Error(
+          "Attendance already closed"
+        );
+      }
+
+      event.attendanceEnabled =
+        false;
+
+      event.attendanceEnd =
+        new Date();
+
+      await event.save();
+
+      res.json({
+        message:
+          "Attendance closed successfully",
+        event,
+      });
+    }
+  );
 // Admin: delete event
 export const deleteEvent =
   asyncHandler(

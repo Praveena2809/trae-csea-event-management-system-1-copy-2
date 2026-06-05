@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
-
+alert("ROLE LOGIN LOADED");
+console.log("ROLE LOGIN FILE LOADED");
 export default function RoleLogin({ role, title, sampleEmail }) {
   const { login, logout } = useAuth();
   const navigate = useNavigate();
@@ -17,21 +18,41 @@ export default function RoleLogin({ role, title, sampleEmail }) {
     return "/dashboard/admin";
   }, [role]);
 
+  // const onSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   try {
+  //     console.log("Role prop:", role);
+  //     //const user = await login(email, password);
+  //     console.log("Role being sent:", role);
+  //     const user = await login(email, password, role);
+  //     // if (user.role !== role) {
+  //     //   logout();
+  //     //   toast.error(`This login page is for "${role}". Your account role is "${user.role}".`);
+  //     //   return;
+  //     // }
+  //     toast.success("Logged in");
+  //     navigate(dash);
+  //   } catch (err) {
+  //     toast.error(err?.response?.data?.message || "Login failed");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const onSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+  
     try {
-      //const user = await login(email, password);
-      const user = await login(email, password, role);
-      if (user.role !== role) {
-        logout();
-        toast.error(`This login page is for "${role}". Your account role is "${user.role}".`);
-        return;
-      }
+      await login(email, password, role);
+  
       toast.success("Logged in");
       navigate(dash);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Login failed");
+      toast.error(
+        err?.response?.data?.message ||
+        "Login failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -42,6 +63,7 @@ export default function RoleLogin({ role, title, sampleEmail }) {
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-950">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{title} Login</h2>
+
           <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
             Use your account credentials to login.
           </p>

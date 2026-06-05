@@ -36,15 +36,63 @@ export const AuthProvider = ({ children }) => {
   //   setUser(data.user);
   //   return data.user;
   // };
+  // const login = async (email, password, expectedRole) => {
+  //   const { data } = await api.post("/auth/login", {
+  //     email,
+  //     password,
+  //     role: expectedRole,
+  //   });
+  
+  //   localStorage.setItem("token", data.token);
+  //   setUser(data.user);
+  //   return data.user;
+  // };
+  // const login = async (email, password, expectedRole) => {
+  //   const { data } = await api.post("/auth/login", {
+  //     email,
+  //     password,
+  //   });
+  
+  //   // BLOCK WRONG ROLE BEFORE LOGIN STATE
+  //   if (expectedRole && data.user.role !== expectedRole) {
+  //     throw new Error(
+  //       `Only ${expectedRole} can login here`
+  //     );
+  //   }
+  
+  //   localStorage.setItem("token", data.token);
+  //   setUser(data.user);
+  
+  //   return data.user;
+  // };
   const login = async (email, password, expectedRole) => {
     const { data } = await api.post("/auth/login", {
       email,
       password,
-      role: expectedRole,
     });
   
-    localStorage.setItem("token", data.token);
+    // STOP wrong-role login immediately
+    if (
+      expectedRole &&
+      data.user.role !== expectedRole
+    ) {
+      return Promise.reject({
+        response: {
+          data: {
+            message: `Only ${expectedRole} can login here`,
+          },
+        },
+      });
+    }
+  
+    // only save login if role matches
+    localStorage.setItem(
+      "token",
+      data.token
+    );
+  
     setUser(data.user);
+  
     return data.user;
   };
   // const register = async (payload) => {
