@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { api } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function MyEvents() {
   const [events, setEvents] = useState([]);
+  const navigate =
+  useNavigate();
   const [venues, setVenues] = useState([]);
   const [creatingFor, setCreatingFor] = useState(null);
   const [subForm, setSubForm] = useState({
@@ -317,6 +320,16 @@ const closeAttendance =
   >
     Close Attendance
   </button>
+  {/* <button
+  onClick={() =>
+    navigate(
+      `/coordinator/feedbacks/${e._id}`
+    )
+  }
+  className="rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+>
+  View Feedback
+</button> */}
 </div>
       </div>
 
@@ -336,7 +349,16 @@ const closeAttendance =
                 {sub.type} •{" "}
                 {sub.status}
               </p>
-
+              <button
+  onClick={() =>
+    navigate(
+      `/coordinator/feedbacks/${sub._id}`
+    )
+  }
+  className="mt-3 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+>
+  View Feedback
+</button>
               {canDeclareResults(
                 sub
               ) && (

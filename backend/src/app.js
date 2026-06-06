@@ -10,7 +10,7 @@ import venueRoutes from "./routes/venueRoutes.js";
 import registrationRoutes from "./routes/registrationRoutes.js";
 import coordinatorApplicationRoutes from "./routes/coordinatorApplicationRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
-
+import announcementRoutes from "./routes/announcementRoutes.js";
 export const app = express();
 
 //app.use(helmet());
@@ -40,6 +40,9 @@ app.use("/api/venues", venueRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/coordinator-applications", coordinatorApplicationRoutes);
 app.use("/api/admin", adminRoutes);
-
+app.use(
+  "/api/announcements",
+  announcementRoutes
+);
 app.use(notFound);
 app.use(errorHandler);

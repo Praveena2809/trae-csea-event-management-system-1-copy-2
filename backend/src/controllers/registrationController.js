@@ -745,35 +745,84 @@ export const verifyRazorpayPayment =
       });
     }
   );
+  export const myRegistrations =
+  asyncHandler(
+    async (req, res) => {
+      const regs =
+        await Registration.find(
+          {
+            participant:
+              req.user._id,
+          }
+        )
+          .populate({
+            path:
+              "subevent",
+            populate: [
+              {
+                path:
+                  "event",
+                select:
+                  "name date",
+              },
+              {
+                path:
+                  "venue",
+              },
+            ],
+          })
+          .sort({
+            createdAt: -1,
+          })
+          .lean();
 
-export const myRegistrations =
-  asyncHandler(async (req, res) => {
-    const regs =
-      await Registration.find({
-        participant:
-          req.user._id,
-      })
-        .populate({
-          path: "subevent",
-          populate: [
+      for (const reg of regs) {
+        const feedback =
+          await Feedback.findOne(
             {
-              path: "event",
-              select:
-                "name date",
-            },
-            {
-              path: "venue",
-            },
-          ],
-        })
-        .sort({
-          createdAt: -1,
-        });
+              registration:
+                reg._id,
+            }
+          );
 
-    res.json({
-      registrations: regs,
-    });
-  });
+        reg.feedback =
+          feedback || null;
+      }
+
+      res.json({
+        registrations:
+          regs,
+      });
+    }
+  );
+// export const myRegistrations =
+//   asyncHandler(async (req, res) => {
+//     const regs =
+//       await Registration.find({
+//         participant:
+//           req.user._id,
+//       })
+//         .populate({
+//           path: "subevent",
+//           populate: [
+//             {
+//               path: "event",
+//               select:
+//                 "name date",
+//             },
+//             {
+//               path: "venue",
+//             },
+//           ],
+//         })
+//         .sort({
+//           createdAt: -1,
+//         });
+
+  //   res.json({
+  //     registrations: regs,
+  //   });
+  // });
 
 /* NEW: Coordinator gets registrations
 for a subevent to choose winner/runner */
@@ -997,37 +1046,244 @@ export const getSubeventRegistrations =
       registration,
     });
   });
+// export const submitFeedback =
+//   asyncHandler(async (req, res) => {
+//     const {
+//       registrationId,
+//     } = req.params;
+
+//     const {
+//       rating,
+//       comment,
+//     } = req.body;
+
+//     const feedback =
+//       await Feedback.findOneAndUpdate(
+//         {
+//           registration:
+//             registrationId,
+//         },
+//         {
+//           rating,
+//           comment,
+//         },
+//         {
+//           upsert: true,
+//           new: true,
+//         }
+//       );
+
+  //   res.json({
+  //     feedback,
+  //   });
+  // });
+  // export const submitFeedback =
+  // asyncHandler(async (req, res) => {
+  //   const { registrationId } =
+  //     req.params;
+
+  //   const {
+  //     rating,
+  //     organizationRating,
+  //     contentRating,
+  //     venueRating,
+  //     likedMost,
+  //     suggestions,
+  //     comment,
+  //   } = req.body;
+  //   const cleanComment =
+  //   comment?.trim();
+  //   const registration =
+  //     await Registration.findById(
+  //       registrationId
+  //     ).populate("subevent");
+
+  //   if (!registration) {
+  //     res.status(404);
+  //     throw new Error(
+  //       "Registration not found"
+  //     );
+  //   }
+
+  //   // only own registration
+  //   if (
+  //     String(
+  //       registration.participant
+  //     ) !==
+  //     String(req.user._id)
+  //   ) {
+  //     res.status(403);
+  //     throw new Error(
+  //       "Unauthorized"
+  //     );
+  //   }
+
+  //   // must attend event
+  //   if (
+  //     registration.status !==
+  //     "attended"
+  //   ) {
+  //     res.status(400);
+  //     throw new Error(
+  //       "You can only give feedback after attending"
+  //     );
+  //   }
+
+  //   // already submitted
+  //   const existing =
+  //     await Feedback.findOne({
+  //       registration:
+  //         registrationId,
+  //     });
+
+  //   if (existing) {
+  //     res.status(400);
+  //     throw new Error(
+  //       "Feedback already submitted"
+  //     );
+  //   }
+    // if (!rating) {
+    //   res.status(400);
+    //   throw new Error(
+    //     "Rating required"
+    //   );
+    // }
+    // const feedback =
+    //   await Feedback.create({
+    //     registration:
+    //       registrationId,
+
+    //     participant:
+    //       req.user._id,
+
+    //     subevent:
+    //       registration.subevent
+    //         ._id,
+
+    //     rating,
+    //     organizationRating,
+  //       contentRating,
+  //       venueRating,
+  //       likedMost,
+  //       suggestions,
+  //       comment: cleanComment,
+  //     });
+
+  //   res.json({
+  //     message:
+  //       "Feedback submitted",
+  //     feedback,
+  //   });
+  // });
+  
 export const submitFeedback =
-  asyncHandler(async (req, res) => {
-    const {
-      registrationId,
-    } = req.params;
+  asyncHandler(
+    async (req, res) => {
+      const {
+        registrationId,
+      } = req.params;
 
-    const {
-      rating,
-      comment,
-    } = req.body;
+      const {
+        rating,
+        comment,
+        likedMost,
+        suggestions,
+      } = req.body;
 
-    const feedback =
-      await Feedback.findOneAndUpdate(
-        {
-          registration:
-            registrationId,
-        },
-        {
-          rating,
-          comment,
-        },
-        {
-          upsert: true,
-          new: true,
-        }
-      );
+      const registration =
+        await Registration.findById(
+          registrationId
+        );
 
-    res.json({
-      feedback,
-    });
-  });
+      if (
+        !registration
+      ) {
+        res.status(404);
+        throw new Error(
+          "Registration not found"
+        );
+      }
+
+      if (
+        registration.participant.toString() !==
+        req.user._id.toString()
+      ) {
+        res.status(403);
+        throw new Error(
+          "Not authorized"
+        );
+      }
+
+      if (
+        registration.status !==
+        "attended"
+      ) {
+        res.status(400);
+        throw new Error(
+          "You can only give feedback after attending"
+        );
+      }
+
+      // prevent duplicate feedback
+      const existing =
+        await Feedback.findOne(
+          {
+            registration:
+              registrationId,
+          }
+        );
+
+      if (
+        existing
+      ) {
+        res.status(400);
+        throw new Error(
+          "Feedback already submitted"
+        );
+      }
+
+      const feedback =
+        await Feedback.create(
+          {
+            participant:
+              req.user
+                ._id,
+
+            registration:
+              registrationId,
+
+            subevent:
+              registration.subevent,
+
+            rating,
+
+            comment:
+              comment ||
+              "",
+
+            likedMost:
+              likedMost ||
+              "",
+
+            suggestions:
+              suggestions ||
+              "",
+          }
+        );
+
+      registration.feedback =
+        feedback._id;
+
+      await registration.save();
+
+      res.status(201).json({
+        message:
+          "Feedback submitted successfully",
+        feedback,
+      });
+    }
+  );
+
 
 export const downloadCertificate =
   asyncHandler(async (req, res) => {
@@ -1212,3 +1468,160 @@ export const verifyCertificate =
         cert,
     });
   });
+  // export const getEventFeedbacks =
+  // asyncHandler(
+  //   async (req, res) => {
+  //     const { subeventId } =
+  //       req.params;
+
+  //     const subevent =
+  //       await Subevent.findById(
+  //         subeventId
+  //       );
+
+  //     if (!subevent) {
+  //       res.status(404);
+  //       throw new Error(
+  //         "Event not found"
+  //       );
+  //     }
+
+  //     // coordinator only
+  //     const isCoordinator =
+  //       String(
+  //         subevent.coordinator
+  //       ) ===
+  //       String(req.user._id);
+
+  //     const isHod =
+  //       req.user.role ===
+  //       "hod";
+
+  //     if (
+  //       !isCoordinator &&
+  //       !isHod
+  //     ) {
+  //       res.status(403);
+  //       throw new Error(
+  //         "Unauthorized"
+  //       );
+  //     }
+
+  //     const feedbacks =
+  //       await Feedback.find({
+  //         subevent:
+  //           subeventId,
+  //       })
+  //         .populate(
+  //           "participant",
+  //           "name email"
+  //         )
+  //         .sort({
+  //           createdAt: -1,
+  //         });
+
+  //     const average =
+  //       feedbacks.length
+  //         ? (
+  //             feedbacks.reduce(
+  //               (a, b) =>
+  //                 a +
+  //                 b.rating,
+  //               0
+  //             ) /
+  //             feedbacks.length
+  //           ).toFixed(1)
+  //         : 0;
+
+  //     res.json({
+  //       averageRating:
+  //         average,
+  //       total:
+  //         feedbacks.length,
+  //       feedbacks,
+  //     });
+  //   }
+  // );
+  // export const getEventFeedbacks =
+  // asyncHandler(
+  //   async (req, res) => {
+  //     const { subeventId } =
+  //       req.params;
+
+  //     const feedbacks =
+  //       await Feedback.find({
+  //         subevent:
+  //           subeventId,
+  //       })
+  //         .populate(
+  //           "participant",
+  //           "name email"
+  //         )
+  //         .sort({
+  //           createdAt: -1,
+  //         });
+
+  //     const average =
+  //       feedbacks.length
+  //         ? (
+  //             feedbacks.reduce(
+  //               (sum, f) =>
+  //                 sum +
+  //                 f.rating,
+  //               0
+  //             ) /
+  //             feedbacks.length
+  //           ).toFixed(1)
+  //         : 0;
+
+  //     res.json({
+  //       averageRating:
+  //         average,
+  //       total:
+  //         feedbacks.length,
+  //       feedbacks,
+  //     });
+  //   }
+  // );
+  export const getEventFeedbacks =
+  asyncHandler(
+    async (req, res) => {
+      const { subeventId } =
+        req.params;
+
+      const feedbacks =
+        await Feedback.find({
+          subevent:
+            subeventId,
+        })
+          .populate(
+            "participant",
+            "name email"
+          )
+          .lean();
+
+      const averageRating =
+        feedbacks.length
+          ? (
+              feedbacks.reduce(
+                (
+                  sum,
+                  f
+                ) =>
+                  sum +
+                  (f.rating ||
+                    0),
+                0
+              ) /
+              feedbacks.length
+            ).toFixed(1)
+          : 0;
+
+      res.json({
+        averageRating,
+        total:
+          feedbacks.length,
+        feedbacks,
+      });
+    }
+  );

@@ -496,7 +496,8 @@ import { Toaster } from "react-hot-toast";
 
 import MainLayout from "./layouts/MainLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
-
+import CoordinatorFeedbacks
+from "./pages/CoordinatorFeedbacks";
 // Public Pages
 import Home from "./pages/Home";
 import Events from "./pages/Events";
@@ -528,6 +529,9 @@ import HodOverview from "./dashboards/HodOverview";
 import PendingApprovals from "./dashboards/PendingApprovals";
 import CoordinatorApplications from "./dashboards/CoordinatorApplications";
 import HodAnalytics from "./dashboards/HodAnalytics";
+import HodFeedbacks
+from "./pages/HodFeedbacks";
+import HodAnnouncements from "./pages/HodAnnouncements";
 
 // Admin Dashboard
 import AdminDashboard from "./dashboards/AdminDashboard";
@@ -686,6 +690,12 @@ export default function App() {
 
             {/* Coordinator */}
             <Route
+  path="/coordinator/feedbacks/:id"
+  element={
+    <CoordinatorFeedbacks />
+  }
+/>
+            <Route
               element={
                 <ProtectedRoute
                   roles={[
@@ -729,7 +739,7 @@ export default function App() {
             </Route>
 
             {/* HOD */}
-            <Route
+            {/* <Route
               element={
                 <ProtectedRoute
                   roles={["hod"]}
@@ -762,7 +772,14 @@ export default function App() {
                     <CoordinatorApplications />
                   }
                 />
-
+                <Route
+  path="/dashboard/hod/announcements"
+  element={<HodAnnouncements />}
+/>
+<Route
+  path="/dashboard/hod/feedbacks"
+  element={<HodFeedbacks />}
+/>
                 <Route
                   path="analytics"
                   element={
@@ -770,8 +787,63 @@ export default function App() {
                   }
                 />
               </Route>
-            </Route>
+            </Route> */}
+<Route
+  element={
+    <ProtectedRoute
+      roles={["hod"]}
+    />
+  }
+>
+  <Route
+    path="/dashboard/hod"
+    element={
+      <HodDashboard />
+    }
+  >
+    <Route
+      index
+      element={
+        <HodOverview />
+      }
+    />
 
+    <Route
+      path="pending-approvals"
+      element={
+        <PendingApprovals />
+      }
+    />
+
+    <Route
+      path="coordinator-applications"
+      element={
+        <CoordinatorApplications />
+      }
+    />
+
+    <Route
+      path="analytics"
+      element={
+        <HodAnalytics />
+      }
+    />
+
+    <Route
+      path="feedbacks"
+      element={
+        <HodFeedbacks />
+      }
+    />
+
+    <Route
+      path="announcements"
+      element={
+        <HodAnnouncements />
+      }
+    />
+  </Route>
+</Route>
            {/* Admin */}
 <Route
   element={

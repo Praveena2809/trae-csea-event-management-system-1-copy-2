@@ -37,6 +37,7 @@ import {
   submitFeedback,
   verifyCertificate,
   verifyRazorpayPayment,
+  getEventFeedbacks,
 } from "../controllers/registrationController.js";
 
 import {
@@ -119,6 +120,11 @@ router.get(
 router.get(
   "/certificates/verify/:token",
   verifyCertificate
+);
+router.get(
+  "/feedbacks/:subeventId",
+  protect,
+  getEventFeedbacks
 );
 
 export default router;
