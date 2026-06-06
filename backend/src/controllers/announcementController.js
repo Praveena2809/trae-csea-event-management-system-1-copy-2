@@ -9,6 +9,77 @@ import {
   Registration,
 } from "../models/Registration.js";
 
+// export const createAnnouncement =
+//   asyncHandler(
+//     async (
+//       req,
+//       res
+//     ) => {
+//       const {
+//         title,
+//         message,
+//         subeventId,
+//       } = req.body;
+
+//       // HOD
+//       if (
+//         req.user.role ===
+//         "hod"
+//       ) {
+//         const announcement =
+//           await Announcement.create(
+//             {
+//               title,
+//               message,
+//               type:
+//                 "general",
+//               createdBy:
+//                 req.user
+//                   ._id,
+//             }
+//           );
+
+//         return res
+//           .status(201)
+//           .json(
+//             announcement
+//           );
+//       }
+
+//       // Coordinator
+//       if (
+//         req.user.role ===
+//         "coordinator"
+//       ) {
+//         const announcement =
+//           await Announcement.create(
+//             {
+//               title,
+//               message,
+//               type:
+//                 "event",
+//               subevent:
+//                 subeventId,
+//               createdBy:
+//                 req.user
+//                   ._id,
+//             }
+//           );
+
+//         return res
+//           .status(201)
+//           .json(
+//             announcement
+//           );
+//       }
+
+//       res
+//         .status(403);
+//       throw new Error(
+//         "Not allowed"
+//       );
+//     }
+//   );
 export const createAnnouncement =
   asyncHandler(
     async (
@@ -21,7 +92,7 @@ export const createAnnouncement =
         subeventId,
       } = req.body;
 
-      // HOD
+      // HOD → everyone
       if (
         req.user.role ===
         "hod"
@@ -46,11 +117,20 @@ export const createAnnouncement =
           );
       }
 
-      // Coordinator
+      // Coordinator → specific event
       if (
         req.user.role ===
         "coordinator"
       ) {
+        if (
+          !subeventId
+        ) {
+          res.status(400);
+          throw new Error(
+            "Subevent required"
+          );
+        }
+
         const announcement =
           await Announcement.create(
             {
@@ -58,8 +138,10 @@ export const createAnnouncement =
               message,
               type:
                 "event",
+
               subevent:
                 subeventId,
+
               createdBy:
                 req.user
                   ._id,
@@ -75,19 +157,19 @@ export const createAnnouncement =
 
       res
         .status(403);
+
       throw new Error(
-        "Not allowed"
+        "Not authorized"
       );
     }
   );
-
-export const getAnnouncements =
+  export const getAnnouncements =
   asyncHandler(
     async (
       req,
       res
     ) => {
-      // Students
+      // Participant
       if (
         req.user.role ===
         "participant"
@@ -115,6 +197,7 @@ export const getAnnouncements =
                   type:
                     "general",
                 },
+
                 {
                   subevent:
                     {
@@ -139,7 +222,42 @@ export const getAnnouncements =
         );
       }
 
-      // HOD & coordinator
+      // Coordinator
+      if (
+        req.user.role ===
+        "coordinator"
+      ) {
+        const announcements =
+          await Announcement.find(
+            {
+              $or: [
+                {
+                  type:
+                    "general",
+                },
+                {
+                  createdBy:
+                    req.user
+                      ._id,
+                },
+              ],
+            }
+          )
+            .populate(
+              "createdBy",
+              "name"
+            )
+            .sort({
+              createdAt:
+                -1,
+            });
+
+        return res.json(
+          announcements
+        );
+      }
+
+      // HOD
       const announcements =
         await Announcement.find()
           .populate(

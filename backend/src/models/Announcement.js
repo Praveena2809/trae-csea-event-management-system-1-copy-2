@@ -33,13 +33,20 @@ const announcementSchema =
         required: true,
       },
 
+      event: {
+        type:
+          mongoose.Schema
+            .Types
+            .ObjectId,
+        ref: "Event",
+      },
+
       subevent: {
         type:
           mongoose.Schema
             .Types
             .ObjectId,
-        ref:
-          "Subevent",
+        ref: "Subevent",
       },
     },
     {

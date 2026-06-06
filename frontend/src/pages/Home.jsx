@@ -4,7 +4,7 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { api } from "../services/api";
-
+import AnnouncementBanner from "../components/AnnouncementBanner";
 function EventMiniCard({ subevent }) {
   return (
     <div className="flex gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-950">
@@ -58,6 +58,7 @@ export default function Home() {
 
   return (
     <div className="space-y-10">
+      <AnnouncementBanner />
       {/* Hero */}
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
         <div className="grid gap-6 p-8 md:grid-cols-2 md:items-center">

@@ -41,6 +41,12 @@ export default function CoordinatorDashboard() {
           to: "/dashboard/coordinator/qr-attendance",
           label: "QR Attendance",
         },
+        {
+          to:
+            "/dashboard/coordinator/announcements",
+          label:
+            "Announcements",
+        }
 
         
       ]}

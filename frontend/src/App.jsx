@@ -522,6 +522,7 @@ import CoordinatorOverview from "./dashboards/CoordinatorOverview";
 import CreateMainEvent from "./dashboards/CreateMainEvent";
 import MyEvents from "./dashboards/MyEvents";
 import QRAttendance from "./dashboards/QRAttendance";
+import CoordinatorAnnouncements from "./pages/CoordinatorAnnouncements";
 
 // HOD Dashboard
 import HodDashboard from "./dashboards/HodDashboard";
@@ -728,7 +729,12 @@ export default function App() {
                   path="my-events"
                   element={<MyEvents />}
                 />
-
+<Route
+  path="announcements"
+  element={
+    <CoordinatorAnnouncements />
+  }
+/>
                 <Route
                   path="qr-attendance"
                   element={
