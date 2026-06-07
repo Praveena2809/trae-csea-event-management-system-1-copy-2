@@ -501,6 +501,7 @@ from "./pages/CoordinatorFeedbacks";
 // Public Pages
 import Home from "./pages/Home";
 import Events from "./pages/Events";
+import Leaderboard from "./pages/Leaderboard";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Login from "./pages/Login";
@@ -607,7 +608,10 @@ export default function App() {
               path="/contact"
               element={<Contact />}
             />
-
+<Route
+  path="/leaderboard"
+  element={<Leaderboard />}
+/>
             {/* Auth */}
             <Route
               path="/login"

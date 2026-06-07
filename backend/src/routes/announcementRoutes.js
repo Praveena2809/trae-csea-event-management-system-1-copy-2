@@ -3,11 +3,13 @@ import express from "express";
 import {
   createAnnouncement,
   getAnnouncements,
+  deleteAnnouncement,
 } from "../controllers/announcementController.js";
 
 import {
-  protect,
-} from "../middleware/authMiddleware.js";
+    protect,
+    requireRole,
+  } from "../middleware/authMiddleware.js";
 
 const router =
   express.Router();
@@ -23,5 +25,15 @@ router.get(
   protect,
   getAnnouncements
 );
+router.delete(
+    "/:id",
+    protect,
+    requireRole(
+      "coordinator",
+      "hod",
+      "admin"
+    ),
+    deleteAnnouncement
+  );
 
 export default router;

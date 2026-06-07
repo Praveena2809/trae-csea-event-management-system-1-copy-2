@@ -349,21 +349,256 @@ const closeAttendance =
                 {sub.type} •{" "}
                 {sub.status}
               </p>
-              <button
+              
+{/* <div className="mt-4 flex flex-wrap items-center gap-3">
+
+  <button
+    onClick={() =>
+      navigate(
+        `/coordinator/feedbacks/${sub._id}`
+      )
+    }
+    className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700"
+  >
+    View Feedback
+  </button>
+
+  <button
+    onClick={() =>
+      loadParticipants(
+        sub._id
+      )
+    }
+    className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+  >
+    Load Participants
+  </button>
+
+  <div className="relative">
+
+    <select
+      className="
+        appearance-none
+        rounded-xl
+        border border-slate-700
+        bg-slate-900
+        px-5 py-3 pr-12
+        text-sm font-semibold
+        text-white
+        transition
+        hover:border-indigo-500
+        hover:bg-slate-800
+        focus:outline-none
+        focus:ring-2
+        focus:ring-indigo-500
+      "
+      defaultValue=""
+      onChange={async (e) => {
+        const type =
+          e.target.value;
+
+        if (!type) return;
+
+        try {
+          const response =
+            await api.get(
+              `/events/export-participants/${sub._id}?type=${type}`,
+              {
+                responseType:
+                  "blob",
+              }
+            );
+
+          const url =
+            window.URL.createObjectURL(
+              new Blob([
+                response.data,
+              ])
+            );
+
+          const link =
+            document.createElement(
+              "a"
+            );
+
+          link.href = url;
+
+          link.setAttribute(
+            "download",
+            `${type}-participants.csv`
+          );
+
+          document.body.appendChild(
+            link
+          );
+
+          link.click();
+
+          link.remove();
+
+          toast.success(
+            "Sheet exported"
+          );
+        } catch (err) {
+          toast.error(
+            "Export failed"
+          );
+        }
+
+        e.target.value = "";
+      }}
+    >
+      <option value="">
+        📄 Export Sheet
+      </option>
+
+      <option value="all">
+        👥 All Registered
+      </option>
+
+      <option value="attended">
+        ✅ Attended Only
+      </option> */}
+
+      {/* <option value="winners">
+        🏆 Winners Only
+      </option>
+    </select>
+
+    <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+      ▼
+    </div>
+
+  </div>
+
+</div> */}
+<div className="mt-4 flex flex-wrap items-center gap-3">
+
+{/* View Feedback */}
+<button
   onClick={() =>
     navigate(
       `/coordinator/feedbacks/${sub._id}`
     )
   }
-  className="mt-3 rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700"
+  className="rounded-xl bg-amber-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-amber-700"
 >
   View Feedback
 </button>
+
+{/* Load Participants */}
+<button
+  onClick={() =>
+    loadRegistrations(
+      sub._id
+    )
+  }
+  className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700"
+>
+  Load Participants
+</button>
+
+{/* Export Sheet */}
+<div className="relative">
+  <select
+    className="
+      appearance-none
+      rounded-xl
+      border border-slate-700
+      bg-slate-900
+      px-5 py-3 pr-12
+      text-sm font-semibold
+      text-white
+      transition
+      hover:border-indigo-500
+      hover:bg-slate-800
+      focus:outline-none
+      focus:ring-2
+      focus:ring-indigo-500
+    "
+    defaultValue=""
+    onChange={async (e) => {
+      const type =
+        e.target.value;
+
+      if (!type) return;
+
+      try {
+        const response =
+          await api.get(
+            `/events/export-participants/${sub._id}?type=${type}`,
+            {
+              responseType:
+                "blob",
+            }
+          );
+
+        const url =
+          window.URL.createObjectURL(
+            new Blob([
+              response.data,
+            ])
+          );
+
+        const link =
+          document.createElement(
+            "a"
+          );
+
+        link.href = url;
+
+        link.setAttribute(
+          "download",
+          `${type}-participants.csv`
+        );
+
+        document.body.appendChild(
+          link
+        );
+
+        link.click();
+        link.remove();
+
+        toast.success(
+          "Sheet exported"
+        );
+      } catch (err) {
+        toast.error(
+          "Export failed"
+        );
+      }
+
+      e.target.value = "";
+    }}
+  >
+    <option value="">
+      📄 Export Sheet
+    </option>
+
+    <option value="all">
+      👥 All Registered
+    </option>
+
+    <option value="attended">
+      ✅ Attended Only
+    </option>
+
+    <option value="winners">
+      🏆 Winners Only
+    </option>
+  </select>
+
+  <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+    ▼
+  </div>
+</div>
+
+</div>
               {canDeclareResults(
                 sub
               ) && (
                 <div className="mt-4 space-y-3">
-                  {!registrationsMap[
+                  {/* {!registrationsMap[
                     sub._id
                   ] && (
                     <button
@@ -376,7 +611,8 @@ const closeAttendance =
                     >
                       Load Participants
                     </button>
-                  )}
+                    
+                  )} */}
 
                   {registrationsMap[
                     sub._id

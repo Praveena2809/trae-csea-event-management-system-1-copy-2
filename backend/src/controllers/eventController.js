@@ -2,7 +2,13 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { Event } from "../models/Event.js";
 import { Subevent } from "../models/Subevent.js";
 import { uploadToCloudinaryIfConfigured } from "../utils/upload.js";
-
+import { Registration }
+  from "../models/Registration.js";
+  import { Parser }
+  from "json2csv";
+ 
+import { User }
+  from "../models/User.js";
 const isOverlapping = (aStart, aEnd, bStart, bEnd) => {
   return aStart < bEnd && bStart < aEnd;
 };
@@ -340,57 +346,167 @@ export const rejectSubevent = asyncHandler(async (req, res) => {
 
 //   res.json({ subevent });
 // });
-export const updateWinners = asyncHandler(async (req, res) => {
-  const { id } = req.params; // subevent id
+// export const updateWinners = asyncHandler(async (req, res) => {
+//   const { id } = req.params; // subevent id
 
-  const {
-    winnerRegistrationId,
-    runnerRegistrationId,
-  } = req.body;
+//   const {
+//     winnerRegistrationId,
+//     runnerRegistrationId,
+//   } = req.body;
 
-  const subevent = await Subevent.findById(
-    id
-  ).populate("event");
+//   const subevent = await Subevent.findById(
+//     id
+//   ).populate("event");
 
-  if (!subevent) {
-    res.status(404);
-    throw new Error("Subevent not found");
-  }
+//   if (!subevent) {
+//     res.status(404);
+//     throw new Error("Subevent not found");
+//   }
 
-  // coordinator ownership check
-  if (
-    String(subevent.createdBy) !==
-    String(req.user._id)
-  ) {
-    res.status(403);
-    throw new Error(
-      "You can update winners only for your subevents"
-    );
-  }
+//   // coordinator ownership check
+//   if (
+//     String(subevent.createdBy) !==
+//     String(req.user._id)
+//   ) {
+//     res.status(403);
+//     throw new Error(
+//       "You can update winners only for your subevents"
+//     );
+//   }
 
-  // only for competitive events
-  if (subevent.type !== "competitive") {
-    res.status(400);
-    throw new Error(
-      "Winner/Runner only applies to competitive events"
-    );
-  }
+//   // only for competitive events
+//   if (subevent.type !== "competitive") {
+//     res.status(400);
+//     throw new Error(
+//       "Winner/Runner only applies to competitive events"
+//     );
+//   }
 
-  subevent.winnerRegistration =
-    winnerRegistrationId || null;
+//   subevent.winnerRegistration =
+//     winnerRegistrationId || null;
 
-  subevent.runnerRegistration =
-    runnerRegistrationId || null;
+//   subevent.runnerRegistration =
+//     runnerRegistrationId || null;
 
-  await subevent.save();
+//   await subevent.save();
+//   if (winnerRegistration) {
+//     const winnerReg =
+//       await Registration.findById(
+//         winnerRegistration
+//       );
+  
+//     if (winnerReg) {
+//       await User.findByIdAndUpdate(
+//         winnerReg.participant,
+//         {
+//           $inc: { points: 20 },
+//         }
+//       );
+//     }
+//   }
+//   res.json({
+//     message:
+//       "Winner and runner updated successfully",
+//     subevent,
+//   });
+// });
+export const updateWinners =
+  async (req, res) => {
+    try {
+      const {
+        winnerRegistrationId,
+        runnerRegistrationId,
+      } = req.body;
 
-  res.json({
-    message:
-      "Winner and runner updated successfully",
-    subevent,
-  });
-});
+      const subeventId =
+        req.params.subeventId;
 
+      const subevent =
+        await Event.findOne({
+          "subevents._id":
+            subeventId,
+        });
+
+      if (!subevent) {
+        return res
+          .status(404)
+          .json({
+            message:
+              "Subevent not found",
+          });
+      }
+
+      // Winner
+      if (
+        winnerRegistrationId
+      ) {
+        const winnerRegistration =
+          await Registration.findById(
+            winnerRegistrationId
+          );
+
+        if (
+          winnerRegistration
+        ) {
+          winnerRegistration.isWinner =
+            true;
+
+          await winnerRegistration.save();
+
+          await User.findByIdAndUpdate(
+            winnerRegistration.participant,
+            {
+              $inc: {
+                points: 20,
+              },
+            }
+          );
+        }
+      }
+
+      // Runner
+      if (
+        runnerRegistrationId
+      ) {
+        const runnerRegistration =
+          await Registration.findById(
+            runnerRegistrationId
+          );
+
+        if (
+          runnerRegistration
+        ) {
+          runnerRegistration.isRunner =
+            true;
+
+          await runnerRegistration.save();
+
+          await User.findByIdAndUpdate(
+            runnerRegistration.participant,
+            {
+              $inc: {
+                points: 10,
+              },
+            }
+          );
+        }
+      }
+
+      return res.json({
+        message:
+          "Winners updated successfully",
+      });
+    } catch (err) {
+      console.error(err);
+
+      return res
+        .status(500)
+        .json({
+          message:
+            err.message,
+        });
+    }
+  };
 // Coordinator: open/close registrations
 export const toggleRegistrationStatus =
   asyncHandler(
@@ -605,4 +721,119 @@ export const deleteEvent =
       });
     }
   );
+  export const exportParticipants =
+  async (req, res) => {
+    try {
+      const {
+        subeventId,
+      } = req.params;
 
+      const {
+        type = "all",
+      } = req.query;
+
+      const registrations =
+        await Registration.find({
+          subevent:
+            subeventId,
+        }).populate(
+          "participant",
+          "name email registerNumber department year"
+        );
+
+      let filtered =
+        registrations;
+
+      // Attended only
+      if (
+        type ===
+        "attended"
+      ) {
+        filtered =
+          registrations.filter(
+            (r) =>
+              r.status ===
+              "attended"
+          );
+      }
+
+      // Winners only
+      if (
+        type ===
+        "winners"
+      ) {
+        const subevent =
+          await Subevent.findById(
+            subeventId
+          );
+
+        filtered =
+          registrations.filter(
+            (r) =>
+              r._id.toString() ===
+                subevent
+                  ?.winnerRegistration
+                  ?.toString() ||
+              r._id.toString() ===
+                subevent
+                  ?.runnerRegistration
+                  ?.toString()
+          );
+      }
+
+      const participants =
+        filtered.map(
+          (r) => ({
+            Name:
+              r.participant
+                ?.name || "",
+
+            Email:
+              r.participant
+                ?.email || "",
+
+            RegisterNumber:
+              r.participant
+                ?.registerNumber ||
+              "",
+
+            Department:
+              r.participant
+                ?.department ||
+              "",
+
+            Year:
+              r.participant
+                ?.year || "",
+
+            Status:
+              r.status,
+          })
+        );
+
+      const parser =
+        new Parser();
+
+      const csv =
+        parser.parse(
+          participants
+        );
+
+      res.header(
+        "Content-Type",
+        "text/csv"
+      );
+
+      res.attachment(
+        `${type}-participants.csv`
+      );
+
+      return res.send(csv);
+
+    } catch (error) {
+      res.status(500).json({
+        message:
+          error.message,
+      });
+    }
+  };

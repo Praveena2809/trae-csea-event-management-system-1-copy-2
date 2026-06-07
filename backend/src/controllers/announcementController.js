@@ -9,77 +9,6 @@ import {
   Registration,
 } from "../models/Registration.js";
 
-// export const createAnnouncement =
-//   asyncHandler(
-//     async (
-//       req,
-//       res
-//     ) => {
-//       const {
-//         title,
-//         message,
-//         subeventId,
-//       } = req.body;
-
-//       // HOD
-//       if (
-//         req.user.role ===
-//         "hod"
-//       ) {
-//         const announcement =
-//           await Announcement.create(
-//             {
-//               title,
-//               message,
-//               type:
-//                 "general",
-//               createdBy:
-//                 req.user
-//                   ._id,
-//             }
-//           );
-
-//         return res
-//           .status(201)
-//           .json(
-//             announcement
-//           );
-//       }
-
-//       // Coordinator
-//       if (
-//         req.user.role ===
-//         "coordinator"
-//       ) {
-//         const announcement =
-//           await Announcement.create(
-//             {
-//               title,
-//               message,
-//               type:
-//                 "event",
-//               subevent:
-//                 subeventId,
-//               createdBy:
-//                 req.user
-//                   ._id,
-//             }
-//           );
-
-//         return res
-//           .status(201)
-//           .json(
-//             announcement
-//           );
-//       }
-
-//       res
-//         .status(403);
-//       throw new Error(
-//         "Not allowed"
-//       );
-//     }
-//   );
 export const createAnnouncement =
   asyncHandler(
     async (
@@ -117,7 +46,7 @@ export const createAnnouncement =
           );
       }
 
-      // Coordinator → specific event
+      // Coordinator → event only
       if (
         req.user.role ===
         "coordinator"
@@ -126,6 +55,7 @@ export const createAnnouncement =
           !subeventId
         ) {
           res.status(400);
+
           throw new Error(
             "Subevent required"
           );
@@ -138,10 +68,8 @@ export const createAnnouncement =
               message,
               type:
                 "event",
-
               subevent:
                 subeventId,
-
               createdBy:
                 req.user
                   ._id,
@@ -155,21 +83,22 @@ export const createAnnouncement =
           );
       }
 
-      res
-        .status(403);
+      res.status(403);
 
       throw new Error(
         "Not authorized"
       );
     }
   );
-  export const getAnnouncements =
+
+export const getAnnouncements =
   asyncHandler(
     async (
       req,
       res
     ) => {
-      // Participant
+
+      // PARTICIPANT
       if (
         req.user.role ===
         "participant"
@@ -197,7 +126,6 @@ export const createAnnouncement =
                   type:
                     "general",
                 },
-
                 {
                   subevent:
                     {
@@ -210,7 +138,7 @@ export const createAnnouncement =
           )
             .populate(
               "createdBy",
-              "name"
+              "name email"
             )
             .sort({
               createdAt:
@@ -222,30 +150,23 @@ export const createAnnouncement =
         );
       }
 
-      // Coordinator
+      // COORDINATOR
       if (
         req.user.role ===
         "coordinator"
       ) {
+        // ONLY coordinator's own announcements
         const announcements =
           await Announcement.find(
             {
-              $or: [
-                {
-                  type:
-                    "general",
-                },
-                {
-                  createdBy:
-                    req.user
-                      ._id,
-                },
-              ],
+              createdBy:
+                req.user
+                  ._id,
             }
           )
             .populate(
               "createdBy",
-              "name"
+              "name email"
             )
             .sort({
               createdAt:
@@ -257,12 +178,12 @@ export const createAnnouncement =
         );
       }
 
-      // HOD
+      // HOD / ADMIN
       const announcements =
         await Announcement.find()
           .populate(
             "createdBy",
-            "name"
+            "name email role"
           )
           .sort({
             createdAt:
@@ -272,5 +193,51 @@ export const createAnnouncement =
       res.json(
         announcements
       );
+    }
+  );
+
+export const deleteAnnouncement =
+  asyncHandler(
+    async (
+      req,
+      res
+    ) => {
+      const announcement =
+        await Announcement.findById(
+          req.params.id
+        );
+
+      if (
+        !announcement
+      ) {
+        res.status(404);
+
+        throw new Error(
+          "Announcement not found"
+        );
+      }
+
+      // creator OR hod/admin
+      if (
+        announcement.createdBy.toString() !==
+          req.user._id.toString() &&
+        req.user.role !==
+          "hod" &&
+        req.user.role !==
+          "admin"
+      ) {
+        res.status(403);
+
+        throw new Error(
+          "Not authorized"
+        );
+      }
+
+      await announcement.deleteOne();
+
+      res.json({
+        message:
+          "Announcement deleted",
+      });
     }
   );

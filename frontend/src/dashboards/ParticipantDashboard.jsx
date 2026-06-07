@@ -9,6 +9,10 @@ export default function ParticipantDashboard() {
         { to: "/dashboard/participant/registrations", label: "My Registered Events" },
         { to: "/dashboard/participant/apply-coordinator", label: "Apply as Coordinator" },
         { to: "/dashboard/participant/profile", label: "Profile" },
+        {
+          to: "/leaderboard",
+          label: "🏆 Leaderboard",
+        }
       ]}
     />
   );

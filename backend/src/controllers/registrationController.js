@@ -311,6 +311,7 @@ import { Certificate } from "../models/Certificate.js";
 import { razorpay } from "../config/razorpay.js";
 import { generateCertificatePdfBuffer } from "../utils/certificatePdf.js";
 import { Event } from "../models/Event.js";
+import { User } from "../models/User.js";
 const buildApiUrl = (path = "/") => {
   const base =
     process.env.API_URL ||
@@ -454,7 +455,12 @@ export const registerForSubevent =
             ? "payment_pending"
             : "registered",
       });
-
+      await User.findByIdAndUpdate(
+        req.user._id,
+        {
+          $inc: { points: 2 },
+        }
+      );
     let order;
 
     if (
@@ -969,7 +975,15 @@ export const getSubeventRegistrations =
         "Invalid QR"
       );
     }
-
+    if (
+      registration.status ===
+      "attended"
+    ) {
+      return res.status(400).json({
+        message:
+          "Attendance already marked",
+      });
+    }
     // Get parent event
     // const event =
     //   await Event.findById(
@@ -994,19 +1008,19 @@ export const getSubeventRegistrations =
     }
 
     // Attendance expired
-    if (
-      event.attendanceEnd &&
-      now >
-        new Date(
-          event.attendanceEnd
-        )
-    ) {
-      res.status(400);
+    // if (
+    //   event.attendanceEnd &&
+    //   now >
+    //     new Date(
+    //       event.attendanceEnd
+    //     )
+    // ) {
+    //   res.status(400);
 
-      throw new Error(
-        "Attendance window closed"
-      );
-    }
+    //   throw new Error(
+    //     "Attendance window closed"
+    //   );
+    // }
 
     // Mark registration attended
     registration.status =
@@ -1019,7 +1033,12 @@ export const getSubeventRegistrations =
       req.user._id;
 
     await registration.save();
-
+    await User.findByIdAndUpdate(
+      registration.participant,
+      {
+        $inc: { points: 5 },
+      }
+    );
     // Save attendance record
     await Attendance.findOneAndUpdate(
       {

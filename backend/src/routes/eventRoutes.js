@@ -167,6 +167,7 @@ import {
   toggleRegistrationStatus,
   updateMainEvent,
   updateWinners,
+  exportParticipants,
 
   // NEW
   openAttendance,
@@ -234,7 +235,14 @@ router.post(
   ),
   createSubevent
 );
-
+router.get(
+  "/export-participants/:subeventId",
+  protect,
+  requireRole(
+    "coordinator"
+  ),
+  exportParticipants
+);
 // Winner / Runner
 router.patch(
   "/subevents/:id/winners",

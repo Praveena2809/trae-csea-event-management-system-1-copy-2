@@ -196,6 +196,51 @@ export default function Home() {
           ))}
         </div>
       </section>
+      {/* <div className="mt-20 text-center mb-20">
+  <h2 className="text-4xl font-bold mb-4 text-white">
+    🏆 Top Participants
+  </h2>
+
+  <p className="text-gray-400 mb-6">
+    Compete in events and earn participation points
+  </p>
+
+  <a
+    href="/leaderboard"
+    className="inline-block bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-2xl text-lg font-semibold transition"
+  >
+    View Leaderboard
+  </a>
+</div> */}
+{/* Leaderboard CTA */}
+<section className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-800 dark:bg-slate-950">
+
+  <div className="mx-auto max-w-3xl">
+
+    <div className="mb-4 text-6xl">
+      🏆
+    </div>
+
+    <h2 className="text-4xl font-bold text-slate-900 dark:text-white">
+      Top Participants
+    </h2>
+
+    <p className="mt-4 text-lg text-slate-600 dark:text-slate-300">
+      Participate in events, attend sessions,
+      win competitions and climb the leaderboard.
+    </p>
+
+    <div className="mt-8">
+      <Link
+        to="/leaderboard"
+        className="inline-flex items-center rounded-2xl bg-gradient-to-r from-purple-600 to-pink-500 px-10 py-4 text-lg font-bold text-white shadow-lg transition hover:scale-105"
+      >
+        View Leaderboard →
+      </Link>
+    </div>
+
+  </div>
+</section>
     </div>
   );
 }
