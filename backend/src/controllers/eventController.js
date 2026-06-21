@@ -6,7 +6,7 @@ import { Registration }
   from "../models/Registration.js";
   import { Parser }
   from "json2csv";
- 
+  import { Attendance } from "../models/Attendance.js";
 import { User }
   from "../models/User.js";
   import { sendEmail } from "../utils/email.js";
@@ -1714,15 +1714,13 @@ export const updateWinners =
         winnerRegistrationId,
         runnerRegistrationId,
       } = req.body;
-
       const subeventId =
-        req.params.subeventId;
+      req.params.id;
 
-      const subevent =
-        await Event.findOne({
-          "subevents._id":
-            subeventId,
-        });
+        const subevent =
+        await Subevent.findById(
+          subeventId
+        );
 
       if (!subevent) {
         return res
@@ -1788,7 +1786,13 @@ export const updateWinners =
           );
         }
       }
-
+      subevent.winnerRegistration =
+      winnerRegistrationId || null;
+    
+    subevent.runnerRegistration =
+      runnerRegistrationId || null;
+    
+    await subevent.save();
       return res.json({
         message:
           "Winners updated successfully",
@@ -2037,7 +2041,15 @@ export const deleteEvent =
           "participant",
           "name email registerNumber department year"
         );
-
+        const subevent =
+        await Subevent.findById(subeventId);
+      
+      const totalSessions =
+        subevent?.totalSessions || 1;
+      
+      const minimumPercentage =
+        subevent?.certificateSettings
+          ?.minimumPercentage || 80;
       let filtered =
         registrations;
 
@@ -2077,36 +2089,70 @@ export const deleteEvent =
                   ?.toString()
           );
       }
-
-      const participants =
-        filtered.map(
-          (r) => ({
+      const participants = await Promise.all(
+        filtered.map(async (r) => {
+      
+          const attendanceRecords =
+            await Attendance.find({
+              registration: r._id,
+            });
+      
+          const row = {
             Name:
-              r.participant
-                ?.name || "",
-
+              r.participant?.name || "",
+      
             Email:
-              r.participant
-                ?.email || "",
-
+              r.participant?.email || "",
+      
             RegisterNumber:
-              r.participant
-                ?.registerNumber ||
-              "",
-
+              r.participant?.registerNumber || "",
+      
             Department:
-              r.participant
-                ?.department ||
-              "",
-
+              r.participant?.department || "",
+      
             Year:
-              r.participant
-                ?.year || "",
-
-            Status:
-              r.status,
-          })
-        );
+              r.participant?.year || "",
+          };
+      
+          let attendedCount = 0;
+      
+          for (
+            let session = 1;
+            session <= totalSessions;
+            session++
+          ) {
+            const attended =
+              attendanceRecords.some(
+                (a) =>
+                  a.sessionNumber === session
+              );
+      
+            row[`S${session}`] =
+              attended ? "✓" : "✗";
+      
+            if (attended)
+              attendedCount++;
+          }
+      
+          const percentage =
+            Math.round(
+              (attendedCount /
+                totalSessions) *
+                100
+            );
+      
+          row["Attendance %"] =
+            `${percentage}%`;
+      
+          row["Certificate Eligible"] =
+            percentage >=
+            minimumPercentage
+              ? "Yes"
+              : "No";
+      
+          return row;
+        })
+      );
 
       const parser =
         new Parser();

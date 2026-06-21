@@ -36,7 +36,10 @@ export default function CoordinatorDashboard() {
           to: "/dashboard/coordinator/my-events",
           label: "My Events",
         },
-
+        {
+          to: "/dashboard/coordinator/attendance",
+          label: "Attendance",
+        },
         {
           to: "/dashboard/coordinator/qr-attendance",
           label: "QR Attendance",

@@ -1441,14 +1441,14 @@ if (existingAttendance) {
     }
   );
   if (
-    registration.status === "payment_pending"
-  ) {
-    res.status(400);
-  
-    throw new Error(
-      "Payment pending"
-    );
-  }
+  registration.status === "payment_pending"
+) {
+  res.status(400);
+
+  throw new Error(
+    "Payment pending"
+  );
+}
   registration.status = "attended";
 
 if (!registration.attendedAt) {
@@ -1744,85 +1744,203 @@ export const downloadCertificate =
       "attendee";
 
     let position;
+// Multi-session attendance check
 
-    if (isWorkshop) {
-      if (
-        reg.status !==
-        "attended"
-      ) {
-        throw new Error(
-          "Workshop certificate only for attendees"
-        );
-      }
-    } else if (
-      isCompetitive
-    ) {
-      if (
-        reg.status !==
-        "attended"
-      ) {
-        throw new Error(
-          "Certificate available only for attendees"
-        );
-      }
+const attendanceCount =
+  await Attendance.countDocuments({
+    registration: reg._id,
+  });
 
-      const isWinner =
-        String(
-          sub.winnerRegistration ||
-            ""
-        ) ===
-        String(reg._id);
+const totalSessions =
+  sub.totalSessions || 1;
 
-      const isRunner =
-        String(
-          sub.runnerRegistration ||
-            ""
-        ) ===
-        String(reg._id);
+const certificateMode =
+  sub.certificateSettings?.mode ||
+  "attendance_once";
 
-      if (isWinner) {
-        certificateType =
-          "winner";
-        position = "1st";
-      } else if (
-        isRunner
-      ) {
-        certificateType =
-          "runner";
-        position = "2nd";
-      } else {
-        certificateType =
-          "attendee";
-      }
-    }
+const minimumPercentage =
+  sub.certificateSettings
+    ?.minimumPercentage || 80;
+    // if (isWorkshop) {
+    //   if (
+    //     reg.status !==
+    //     "attended"
+    //   ) {
+    //     throw new Error(
+    //       "Workshop certificate only for attendees"
+    //     );
+    //   }
+    // }
+    
+   // Certificate eligibility validation
 
-    let cert =
-      await Certificate.findOne(
-        {
-          registration:
-            reg._id,
-        }
-      );
+if (
+  certificateMode ===
+  "attendance_once"
+) {
 
+  if (
+    attendanceCount < 1
+  ) {
+    throw new Error(
+      "Attend at least one session to download certificate"
+    );
+  }
+
+}
+
+else if (
+  certificateMode ===
+  "attendance_percentage"
+) {
+
+  const percentage =
+    (
+      attendanceCount /
+      totalSessions
+    ) * 100;
+
+  if (
+    percentage <
+    minimumPercentage
+  ) {
+    throw new Error(
+      `Certificate requires ${minimumPercentage}% attendance. Current attendance: ${percentage.toFixed(
+        0
+      )}%`
+    );
+  }
+// Decide certificate type AFTER eligibility is confirmed
+
+if (sub.type === "competitive") {
+
+  const isWinner =
+    String(sub.winnerRegistration || "") ===
+    String(reg._id);
+
+  const isRunner =
+    String(sub.runnerRegistration || "") ===
+    String(reg._id);
+
+  if (isWinner) {
+    certificateType = "winner";
+    position = "1st";
+  } else if (isRunner) {
+    certificateType = "runner";
+    position = "2nd";
+  } else {
+    certificateType = "attendee";
+    position = undefined;
+  }
+
+} else {
+
+  certificateType = "attendee";
+  position = undefined;
+
+}
+}
+    // else if (
+    //   isCompetitive
+    // ) {
+    //   if (
+    //     reg.status !==
+    //     "attended"
+    //   ) {
+    //     throw new Error(
+    //       "Certificate available only for attendees"
+    //     );
+    //   }
+
+    //   const isWinner =
+    //     String(
+    //       sub.winnerRegistration ||
+    //         ""
+    //     ) ===
+    //     String(reg._id);
+
+    //   const isRunner =
+    //     String(
+    //       sub.runnerRegistration ||
+    //         ""
+    //     ) ===
+    //     String(reg._id);
+
+    //   if (isWinner) {
+    //     certificateType =
+    //       "winner";
+    //     position = "1st";
+    //   } else if (
+    //     isRunner
+    //   ) {
+    //     certificateType =
+    //       "runner";
+    //     position = "2nd";
+    //   } else {
+    //     certificateType =
+    //       "attendee";
+    //   }
+    // }
+    console.log("REG ID:", String(reg._id));
+console.log(
+  "WINNER ID:",
+  String(sub.winnerRegistration || "")
+);
+
+console.log(
+  "RUNNER ID:",
+  String(sub.runnerRegistration || "")
+);
+
+console.log(
+  "IS WINNER:",
+  String(sub.winnerRegistration || "") ===
+    String(reg._id)
+);
+    let cert = await Certificate.findOne({
+      registration: reg._id,
+    });
+    
     if (!cert) {
-      cert =
-        await Certificate.create(
-          {
-            registration:
-              reg._id,
-            certificateType,
-            position,
-            verificationToken:
-              crypto
-                .randomBytes(
-                  16
-                )
-                .toString(
-                  "hex"
-                ),
-          }
-        );
+      cert = await Certificate.create({
+        registration: reg._id,
+        certificateType,
+        position,
+        verificationToken:
+          crypto.randomBytes(16).toString("hex"),
+      });
+    } else {
+      cert.certificateType = certificateType;
+      cert.position = position;
+      await cert.save();
     }
+    // let cert =
+    //   await Certificate.findOne(
+    //     {
+    //       registration:
+    //         reg._id,
+    //     }
+    //   );
+
+    // if (!cert) {
+    //   cert =
+    //     await Certificate.create(
+    //       {
+    //         registration:
+    //           reg._id,
+    //         certificateType,
+    //         position,
+    //         verificationToken:
+    //           crypto
+    //             .randomBytes(
+    //               16
+    //             )
+    //             .toString(
+    //               "hex"
+    //             ),
+    //       }
+    //     );
+    // }
 
     const verificationUrl =
       buildApiUrl(
