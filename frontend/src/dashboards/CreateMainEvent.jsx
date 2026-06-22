@@ -179,7 +179,7 @@ const [availabilityMap,
       venue: "",
       startAt: "",
       endAt: "",
-      eligibility: "",
+      eligibility: "All Years",
       maxParticipants: "",
       entryFee: "",
       eventManager: "",
@@ -210,7 +210,7 @@ certificateSettings: {
         venue: "",
         startAt: "",
         endAt: "",
-        eligibility: "",
+        eligibility: "All Years",
         maxParticipants: "",
         entryFee: "",
         eventManager: "",
@@ -924,10 +924,13 @@ fd.append(
     Eligibility
   </label>
 
-  <input
-    value={
-      s.eligibility
-    }
+  <div>
+  <label className="text-sm font-medium">
+    Eligibility
+  </label>
+
+  <select
+    value={s.eligibility || "All Years"}
     onChange={(e) =>
       updateSubevent(
         index,
@@ -936,7 +939,28 @@ fd.append(
       )
     }
     className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-black dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-  />
+  >
+    <option value="All Years">
+      All Years
+    </option>
+
+    <option value="1st Year">
+      1st Year
+    </option>
+
+    <option value="2nd Year">
+      2nd Year
+    </option>
+
+    <option value="3rd Year">
+      3rd Year
+    </option>
+
+    <option value="4th Year">
+      4th Year
+    </option>
+  </select>
+</div>
 </div>
 <div>
   <label className="text-sm font-medium">
