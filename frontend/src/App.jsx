@@ -509,7 +509,7 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
-
+import SelectMode from "./pages/SelectMode";
 // Participant Dashboard
 import ParticipantDashboard from "./dashboards/ParticipantDashboard";
 import ParticipantOverview from "./dashboards/ParticipantOverview";
@@ -610,6 +610,10 @@ export default function App() {
               path="/contact"
               element={<Contact />}
             />
+            <Route
+  path="/select-mode"
+  element={<SelectMode />}
+/>
 <Route
   path="/leaderboard"
   element={<Leaderboard />}

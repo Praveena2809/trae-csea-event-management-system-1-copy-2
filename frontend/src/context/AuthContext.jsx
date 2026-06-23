@@ -72,7 +72,22 @@ export const AuthProvider = ({ children }) => {
     });
   
     // STOP wrong-role login immediately
-    if (
+    if (expectedRole === "student") {
+      if (
+        data.user.role !== "participant" &&
+        data.user.role !== "coordinator"
+      ) {
+        return Promise.reject({
+          response: {
+            data: {
+              message:
+                "Only students can login here",
+            },
+          },
+        });
+      }
+    }
+    else if (
       expectedRole &&
       data.user.role !== expectedRole
     ) {

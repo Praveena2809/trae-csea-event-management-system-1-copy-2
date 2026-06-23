@@ -1089,8 +1089,7 @@ export default function Events() {
     >
       Closed by Coordinator
     </button>
-  ) : user.role ===
-    "participant" ? (
+  ) :  (
     <button
       onClick={() =>
         register(
@@ -1101,12 +1100,7 @@ export default function Events() {
     >
       Register Now
     </button>
-  ) : (
-    <span className="text-sm text-slate-500">
-      Login as participant
-      to register
-    </span>
-  )}
+  ) }
 </div>
                         {/* <div className="mt-4">
                           {!user ? (

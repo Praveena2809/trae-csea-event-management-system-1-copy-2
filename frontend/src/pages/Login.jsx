@@ -347,7 +347,7 @@ export default function Login() {
       setLoading(true);
 
       // PASS ROLE TO LOGIN
-      await login(
+      const user = await login(
         email,
         password,
         role
@@ -358,34 +358,49 @@ export default function Login() {
       );
 
       // NAVIGATE BASED ON SELECTED PAGE ROLE
-      switch (role) {
-        case "participant":
-          navigate(
-            "/dashboard/participant"
-          );
-          break;
-
-        case "coordinator":
-          navigate(
-            "/dashboard/coordinator"
-          );
-          break;
-
-        case "hod":
-          navigate(
-            "/dashboard/hod"
-          );
-          break;
-
-        case "admin":
-          navigate(
-            "/dashboard/admin"
-          );
-          break;
-
-        default:
-          navigate("/");
+      if (user.role === "coordinator") {
+        navigate("/select-mode");
       }
+      else if (user.role === "participant") {
+        navigate("/dashboard/participant");
+      }
+      else if (user.role === "hod") {
+        navigate("/dashboard/hod");
+      }
+      else if (user.role === "admin") {
+        navigate("/dashboard/admin");
+      }
+      else {
+        navigate("/");
+      }
+      // switch (role) {
+      //   case "participant":
+      //     navigate(
+      //       "/dashboard/participant"
+      //     );
+      //     break;
+
+      //   case "coordinator":
+      //     navigate(
+      //       "/dashboard/coordinator"
+      //     );
+      //     break;
+
+      //   case "hod":
+      //     navigate(
+      //       "/dashboard/hod"
+      //     );
+      //     break;
+
+      //   case "admin":
+      //     navigate(
+      //       "/dashboard/admin"
+      //     );
+      //     break;
+
+      //   default:
+      //     navigate("/");
+      // }
     } catch (err) {
       console.error(err);
 

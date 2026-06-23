@@ -360,6 +360,33 @@ const participant =
     req.user._id
   );
 
+
+// Prevent coordinators from registering
+// for their own events
+
+if (
+  subevent.createdBy &&
+  subevent.createdBy.toString() ===
+    req.user._id.toString()
+) {
+  res.status(400);
+
+  throw new Error(
+    "You cannot register for an event you created"
+  );
+}
+
+if (
+  participant.role === "coordinator" &&
+  subevent.eventManager &&
+  subevent.eventManager === participant.name
+) {
+  res.status(400);
+
+  throw new Error(
+    "Event managers cannot register for their own events"
+  );
+}
 if (
   subevent.eligibility &&
   subevent.eligibility.length > 0

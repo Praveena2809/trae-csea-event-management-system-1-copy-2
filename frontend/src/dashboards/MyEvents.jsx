@@ -24,7 +24,7 @@ export default function MyEvents() {
     venue: "",
     startAt: "",
     endAt: "",
-    eligibility: "All Years",
+    eligibility: ["1", "2", "3", "4"],
     maxParticipants: "",
     entryFee: "",
     eventManager: "",
@@ -410,7 +410,7 @@ const closeAttendance =
         venue: "",
         startAt: "",
         endAt: "",
-        eligibility: "",
+        eligibility: ["1", "2", "3", "4"],
         maxParticipants: "",
         entryFee: "",
         eventManager: "",
@@ -753,12 +753,53 @@ certificateSettings: {
             </div>
 
             <div>
-              <label className="text-sm font-medium">Eligibility</label>
-              <input
-                value={subForm.eligibility}
-                onChange={(e) => setSubForm((f) => ({ ...f, eligibility: e.target.value }))}
-                className="mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
-              />
+            <div>
+  <label className="text-sm font-medium">
+    Eligibility
+  </label>
+
+  <div className="mt-2 space-y-2">
+    {[
+      "1",
+      "2",
+      "3",
+      "4",
+    ].map((year) => (
+      <label
+        key={year}
+        className="flex items-center gap-2"
+      >
+        <input
+          type="checkbox"
+          checked={subForm.eligibility.includes(
+            year
+          )}
+          onChange={(e) => {
+            if (e.target.checked) {
+              setSubForm((f) => ({
+                ...f,
+                eligibility: [
+                  ...f.eligibility,
+                  year,
+                ],
+              }));
+            } else {
+              setSubForm((f) => ({
+                ...f,
+                eligibility:
+                  f.eligibility.filter(
+                    (y) => y !== year
+                  ),
+              }));
+            }
+          }}
+        />
+
+        {year} Year
+      </label>
+    ))}
+  </div>
+</div>
             </div>
             <div>
               <label className="text-sm font-medium">Max participants</label>
@@ -1293,19 +1334,58 @@ certificateSettings: {
       Eligibility
     </label>
 
-    <input
-      value={
-        editingSubevent.eligibility || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          eligibility:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
+    <div>
+  <label className="text-sm font-medium text-white">
+    Eligibility
+  </label>
+
+  <div className="mt-2 space-y-2">
+    {["1", "2", "3", "4"].map(
+      (year) => (
+        <label
+          key={year}
+          className="flex items-center gap-2 text-white"
+        >
+          <input
+            type="checkbox"
+            checked={
+              editingSubevent.eligibility?.includes(
+                year
+              ) || false
+            }
+            onChange={(e) => {
+              if (e.target.checked) {
+                setEditingSubevent(
+                  (prev) => ({
+                    ...prev,
+                    eligibility: [
+                      ...(prev.eligibility ||
+                        []),
+                      year,
+                    ],
+                  })
+                );
+              } else {
+                setEditingSubevent(
+                  (prev) => ({
+                    ...prev,
+                    eligibility:
+                      prev.eligibility.filter(
+                        (y) =>
+                          y !== year
+                      ),
+                  })
+                );
+              }
+            }}
+          />
+
+          {year} Year
+        </label>
+      )
+    )}
+  </div>
+</div>
   </div>
 
   {/* MAX PARTICIPANTS */}

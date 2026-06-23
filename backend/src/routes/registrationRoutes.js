@@ -55,7 +55,7 @@ const router = express.Router();
 router.get(
   "/me",
   protect,
-  requireRole("participant"),
+  requireRole("participant", "coordinator"),
   myRegistrations
 );
 
@@ -63,7 +63,7 @@ router.get(
 router.post(
   "/:subeventId/register",
   protect,
-  requireRole("participant"),
+  requireRole("participant", "coordinator"),
   registerForSubevent
 );
 
@@ -71,7 +71,7 @@ router.post(
 router.post(
   "/razorpay/verify",
   protect,
-  requireRole("participant"),
+  requireRole("participant", "coordinator"),
   verifyRazorpayPayment
 );
 
@@ -79,7 +79,7 @@ router.post(
 router.post(
   "/feedback/:registrationId",
   protect,
-  requireRole("participant"),
+  requireRole("participant", "coordinator"),
   submitFeedback
 );
 
@@ -87,7 +87,7 @@ router.post(
 router.get(
   "/certificate/:registrationId",
   protect,
-  requireRole("participant"),
+  requireRole("participant", "coordinator"),
   downloadCertificate
 );
 

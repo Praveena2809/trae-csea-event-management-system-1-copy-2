@@ -2,8 +2,7 @@ import { Link } from "react-router-dom";
 
 const SAMPLE_PASSWORD = "Password123!";
 const sample = {
-  participant: "participant@example.com",
-  coordinator: "coordinator@example.com",
+  student: "participant@example.com",
   hod: "hod@example.com",
   admin: "admin@example.com",
 };
@@ -37,8 +36,11 @@ export default function LoginLanding() {
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Participant / Student" to="/login/participant" email={sample.participant} />
-        <Card title="Event Coordinator" to="/login/coordinator" email={sample.coordinator} />
+      <Card
+  title="Student"
+  to="/login/student"
+  email={sample.student}
+/>
         <Card title="HOD" to="/login/hod" email={sample.hod} />
         <Card title="System Admin" to="/login/admin" email={sample.admin} />
       </div>
