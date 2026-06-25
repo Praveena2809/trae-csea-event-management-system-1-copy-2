@@ -156,6 +156,8 @@ import express from "express";
 import {
   approveEvent,
   approveSubevent,
+  getEventForEdit,
+resubmitEventProposal,
   createMainEvent,
   createSubevent,
   deleteEvent,
@@ -219,7 +221,20 @@ router.get(
   ),
   listMyEvents
 );
+router.get(
+  "/:id/edit",
+  protect,
+  requireRole("coordinator"),
+  getEventForEdit
+);
 
+router.put(
+  "/:id/resubmit",
+  protect,
+  requireRole("coordinator"),
+  upload.any(),
+  resubmitEventProposal
+);
 router.post(
   "/",
   protect,
@@ -227,16 +242,11 @@ router.post(
   upload.any(),
   createMainEvent
 );
-
 router.put(
   "/:id",
   protect,
-  requireRole(
-    "coordinator"
-  ),
-  upload.single(
-    "poster"
-  ),
+  requireRole("coordinator"),
+  upload.any(),
   updateMainEvent
 );
 

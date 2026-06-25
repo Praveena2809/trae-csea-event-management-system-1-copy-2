@@ -40,7 +40,44 @@ export const listPublicEvents = asyncHandler(async (req, res) => {
     events: events.map((e) => ({ ...e, subevents: grouped[e._id] || [] })),
   });
 });
+export const getEventForEdit = async (req, res) => {
+  const event = await Event.findById(req.params.id);
 
+  const subevents = await Subevent.find({
+    event: req.params.id,
+  });
+
+  res.json({
+    event,
+    subevents,
+  });
+};
+export const resubmitEventProposal = async (req, res) => {
+  const event = await Event.findById(req.params.id);
+
+  if (!event) {
+    return res
+      .status(404)
+      .json({ message: "Event not found" });
+  }
+
+  event.status = "pending_review";
+  event.hodFeedback = "";
+
+  await event.save();
+
+  await Subevent.updateMany(
+    { event: event._id },
+    {
+      status: "pending_review",
+      hodFeedback: "",
+    }
+  );
+
+  res.json({
+    success: true,
+  });
+};
 export const getEventById = asyncHandler(async (req, res) => {
   const event = await Event.findById(req.params.id).lean();
   if (!event) {
@@ -84,6 +121,9 @@ export const getEventById = asyncHandler(async (req, res) => {
 // });
 export const createMainEvent =
   asyncHandler(async (req, res) => {
+    console.log("CREATE MAIN EVENT HIT");
+    console.log("FILES RECEIVED:");
+console.log(req.files);
     const {
       name,
       description,
@@ -95,35 +135,28 @@ export const createMainEvent =
       // NEW
       subevents = "[]",
     } = req.body;
-
-    if (
-      !name ||
-      !description ||
-      !date
-    ) {
-      res.status(400);
-      throw new Error(
-        "name, description and date are required"
-      );
-    }
-    console.log("SUBEVENT FILE:", req.file);
-    console.log("SUBEVENT BODY:", req.body);
-  
-    console.log("FILES:", req.files);
-console.log("FILE:", req.file);
-    let posterUrl;
-
-    if (req.file?.path) {
+    console.log("REQ FILE:", req.file);
+    const mainPoster = req.files?.find(
+      (f) => f.fieldname === "poster"
+    );
+    
+    let posterUrl = "";
+    
+    if (mainPoster?.path) {
       const uploaded =
         await uploadToCloudinaryIfConfigured(
-          req.file.path,
+          mainPoster.path,
           "cse-events/posters"
         );
-
+    
       posterUrl =
         uploaded.url ||
-        `/uploads/${req.file.filename}`;
+        `/uploads/${mainPoster.filename}`;
     }
+    
+    console.log("EVENT POSTER URL:", posterUrl);
+
+
 
     // create event
     const event =
@@ -190,7 +223,9 @@ if (posterFile?.path) {
             type: sub.type,
             name: sub.name,
             description: sub.description,
+            isInitialProposal: true,
             posterUrl: subeventPosterUrl,
+          
 
             venue: sub.venue || null,
           
@@ -236,6 +271,12 @@ if (posterFile?.path) {
     });
   });
 export const updateMainEvent = asyncHandler(async (req, res) => {
+  console.log("UPDATE EVENT HIT");
+console.log(req.body);
+console.log(req.files);
+  console.log("UPDATE EVENT HIT");
+console.log(req.params.id);
+console.log(req.body);
   const event = await Event.findById(req.params.id);
   if (!event) {
     res.status(404);
@@ -245,7 +286,13 @@ export const updateMainEvent = asyncHandler(async (req, res) => {
     res.status(403);
     throw new Error("You can only edit your own events");
   }
-  if (!["pending_review", "rejected"].includes(event.status)) {
+  if (
+    ![
+      "pending_review",
+      "rejected",
+      "revision_requested",
+    ].includes(event.status)
+  ) {
     res.status(400);
     throw new Error("Approved events cannot be edited (create a new version instead)");
   }
@@ -259,14 +306,92 @@ export const updateMainEvent = asyncHandler(async (req, res) => {
     const uploaded = await uploadToCloudinaryIfConfigured(req.file.path, "cse-events/posters");
     event.posterUrl = uploaded.url || `/uploads/${req.file.filename}`;
   }
-
+  console.log("BEFORE SAVE", req.body);
   // resubmission clears rejection reason
-  if (event.status === "rejected") {
+  if (
+    ["rejected", "revision_requested"].includes(
+      event.status
+    )
+  ) {
     event.status = "pending_review";
-    event.rejectionReason = undefined;
+  
+    event.rejectionReason = "";
+    event.hodFeedback = "";
+  
+    await Subevent.updateMany(
+      {
+        event: event._id,
+        isInitialProposal: true,
+      },
+      {
+        $set: {
+          status: "pending_review",
+          rejectionReason: "",
+          hodFeedback: "",
+        },
+      }
+    );
+  }
+  console.log("UPDATED EVENT", {
+    name: event.name,
+    description: event.description,
+    budgetEstimate: event.budgetEstimate,
+  });
+  if (req.body.subevents) {
+
+    const parsedSubevents =
+      JSON.parse(req.body.subevents);
+  
+    for (const sub of parsedSubevents) {
+  
+      await Subevent.findByIdAndUpdate(
+        sub._id,
+        {
+          name: sub.name,
+          description: sub.description,
+          type: sub.type,
+          venue: sub.venue,
+          startAt: sub.startAt,
+          endAt: sub.endAt,
+          eligibility: sub.eligibility,
+          maxParticipants:
+            sub.maxParticipants,
+          entryFee: sub.entryFee,
+          totalSessions:
+            sub.totalSessions,
+          certificateSettings:
+            sub.certificateSettings,
+          eventManager:
+            sub.eventManager,
+          managerPhone:
+            sub.managerPhone,
+          prizePool:
+            sub.prizePool,
+          status:
+            "pending_review",
+          hodFeedback: "",
+        }
+      );
+    }
+  
+    const checkSub =
+      await Subevent.findById(
+        parsedSubevents[0]._id
+      );
+  
+    console.log(
+      "UPDATED SUBEVENT:",
+      checkSub.name,
+      checkSub.prizePool
+    );
   }
 
   await event.save();
+  console.log(
+    "EVENT RESUBMITTED:",
+    event.name,
+    event.status
+  );
   res.json({ event });
 });
 
@@ -376,18 +501,30 @@ export const createSubevent = asyncHandler(async (req, res) => {
     }
   }
   console.log("REQ FILE:", req.file);
-  console.log("REQ BODY:", req.body);
-  let posterUrl;
-  if (req.file?.path) {
-    const uploaded = await uploadToCloudinaryIfConfigured(req.file.path, "cse-events/subevent-posters");
-    posterUrl = uploaded.url || `/uploads/${req.file.filename}`;
-  }
+console.log("REQ BODY:", req.body);
+
+let posterUrl = "";
+
+if (req.file?.path) {
+  const uploaded =
+    await uploadToCloudinaryIfConfigured(
+      req.file.path,
+      "cse-events/subevent-posters"
+    );
+
+  posterUrl =
+    uploaded.url ||
+    `/uploads/${req.file.filename}`;
+}
+
+console.log("SUBEVENT POSTER:", posterUrl);
 
   const subevent = await Subevent.create({
     event: eventId,
     type,
     name,
     description,
+    isInitialProposal: false,
     venue: venue || undefined,
     startAt: start,
     endAt: end,
@@ -608,21 +745,18 @@ export const listPendingApprovals =
     // separately fetch
     // later-added subevents
     const pendingSubevents =
-      await Subevent.find({
-        status:
-          "pending_review",
-      })
-        .populate(
-          "event",
-          "name status"
-        )
-        .populate(
-          "createdBy",
-          "name email"
-        )
-        .sort({
-          createdAt: -1,
-        });
+    await Subevent.find({
+      status: "pending_review",
+      $or: [
+        { isInitialProposal: false },
+        { isInitialProposal: { $exists: false } }
+      ]
+    })
+  
+      .populate("event", "name status")
+      .populate("venue", "name")
+      .populate("createdBy", "name email")
+      .sort({ createdAt: -1 });
 
     res.json({
       proposals:
@@ -931,40 +1065,59 @@ export const approveEvent = asyncHandler(async (req, res) => {
       
         revisionCount++;
       }
-
+      else if (
+        item.action ===
+        "rejected"
+      ) {
+        subevent.status =
+          "rejected";
+      
+        subevent.rejectionReason =
+          item.reason ||
+          "Rejected by HOD";
+      
+        subevent.hodFeedback =
+          item.reason ||
+          "Rejected by HOD";
+      
+        subevent.reviewedBy =
+          req.user._id;
+      
+        subevent.reviewedAt =
+          new Date();
+      
+        revisionCount++;
+      }
       await subevent.save();
     }
 
     // EVENT STATUS LOGIC
 
     // some approved + some rejected
-    if (
-      approvedCount > 0 &&
-      revisionCount > 0
-    ) {
-      event.status =
-        "revision_requested";
-    }
+    
 
     // all approved
-    else if (
-      approvedCount > 0 &&
-      revisionCount === 0
-    ) {
-      event.status =
-        "approved";
-    }
+  
 
     // all revision requested
-    else {
-      event.status =
-        "revision_requested";
-    }
+   // EVENT STATUS LOGIC
 
-    // save overall HOD feedback
-    event.hodFeedback =
-      overallFeedback ||
-      "";
+if (
+  revisionCount > 0
+) {
+  event.status =
+    "revision_requested";
+}
+else if (
+  approvedCount > 0
+) {
+  event.status =
+    "approved";
+}
+else {
+  event.status =
+    "rejected";
+}
 
     event.reviewedBy =
       req.user._id;
@@ -1621,20 +1774,33 @@ export const approveSubevent = asyncHandler(async (req, res) => {
 
 export const rejectSubevent = asyncHandler(async (req, res) => {
   const subevent = await Subevent.findById(req.params.id);
+
   if (!subevent) {
     res.status(404);
     throw new Error("Subevent not found");
   }
-  const { reason } = req.body;
+
+  const { reason, action } = req.body;
+
   if (!reason) {
     res.status(400);
-    throw new Error("Rejection reason is required");
+    throw new Error("Reason is required");
   }
-  subevent.status = "rejected";
+
+  if (action === "revision_requested") {
+    subevent.status = "revision_requested";
+  } else {
+    subevent.status = "rejected";
+  }
+
   subevent.rejectionReason = reason;
-  subevent.approvedBy = req.user._id;
-  subevent.approvedAt = new Date();
+  subevent.hodFeedback = reason;
+
+  subevent.reviewedBy = req.user._id;
+  subevent.reviewedAt = new Date();
+
   await subevent.save();
+
   res.json({ subevent });
 });
 

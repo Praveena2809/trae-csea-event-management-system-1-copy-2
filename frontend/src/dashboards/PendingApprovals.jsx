@@ -15,13 +15,21 @@ export default function PendingApprovals() {
 
   const [reason, setReason] =
     useState({});
+    const [
+      standaloneReviews,
+      setStandaloneReviews,
+    ] = useState({});
 
   const load = async () => {
     const { data } =
       await api.get(
         "/events/hod/pending"
       );
-
+      console.log("HOD DATA", data);
+      console.log(
+        "PENDING SUBEVENTS",
+        data.pendingSubevents
+      );
     // setData({
     //   events:
     //     data.events || [],
@@ -112,6 +120,43 @@ export default function PendingApprovals() {
 
       load();
     };
+    const reviewStandaloneSubevent =
+  async (subevent) => {
+    const review =
+      standaloneReviews[
+        subevent._id
+      ];
+
+  
+
+      if (review.action === "approved") {
+        await api.post(
+          `/events/hod/subevents/${subevent._id}/approve`
+        );
+      }
+      else if (
+        review.action === "revision_requested"
+      ) {
+        await api.post(
+          `/events/hod/subevents/${subevent._id}/reject`,
+          {
+            reason: review.reason,
+            action: "revision_requested",
+          }
+        );
+      }
+      else if (
+        review.action === "rejected"
+      ) {
+        await api.post(
+          `/events/hod/subevents/${subevent._id}/reject`,
+          {
+            reason: review.reason,
+            action: "rejected",
+          }
+        );
+      }
+  };
     const reviewProposal =
   async (
     eventId,
@@ -143,7 +188,22 @@ export default function PendingApprovals() {
             })
           ),
       };
-
+      for (const s of subevents) {
+        const action =
+          reason[`decision-${s._id}`];
+      
+        if (
+          (action === "rejected" ||
+            action ===
+              "revision_requested") &&
+          !reason[s._id]
+        ) {
+          toast.error(
+            `Please enter a reason for ${s.name}`
+          );
+          return;
+        }
+      }
       await api.put(
         `/events/hod/events/${eventId}/review-proposal`,
         payload
@@ -474,9 +534,7 @@ export default function PendingApprovals() {
                   {s.venue?.name ||
                     "N/A"}
                 </div> */}
-                <p className="text-red-400">
-  Poster URL from API: {String(s.posterUrl)}
-</p>
+    
  {s.posterUrl ? (
   <img
   src={`http://localhost:8000${s.posterUrl}`}
@@ -672,11 +730,31 @@ export default function PendingApprovals() {
                     Revision
                   </label>
                 </div>
+                <label className="flex items-center gap-2">
+  <input
+    type="radio"
+    name={`decision-${s._id}`}
+    checked={
+      reason[`decision-${s._id}`] ===
+      "rejected"
+    }
+    onChange={() =>
+      setReason((r) => ({
+        ...r,
+        [`decision-${s._id}`]:
+          "rejected",
+      }))
+    }
+  />
 
-                {reason[
-                  `decision-${s._id}`
-                ] ===
-                  "revision_requested" && (
+  Reject
+</label>
+                {(
+  reason[`decision-${s._id}`] ===
+    "revision_requested" ||
+  reason[`decision-${s._id}`] ===
+    "rejected"
+) && (
                   <textarea
                     placeholder="Reason for revision"
                     value={
@@ -702,6 +780,7 @@ export default function PendingApprovals() {
                   />
                 )}
               </div>
+             
             )
           )}
         </div>
@@ -771,73 +850,222 @@ export default function PendingApprovals() {
               key={s._id}
               className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950"
             >
-              <p className="font-semibold">
-                {s.name}
-              </p>
+   {s.posterUrl ? (
+  <img
+  src={`http://localhost:8000${s.posterUrl}`}
+    alt={s.name}
+    className="mb-3 h-48 w-full rounded-lg object-cover"
+  />
+) : (
+  <div className="mb-3 flex h-48 items-center justify-center rounded-lg border-2 border-dashed border-slate-600">
+    No Subevent Poster Uploaded
+  </div>
+)}
+                <div className="flex items-center justify-between">
+  <h4 className="text-lg font-bold">
+    {s.name}
+  </h4>
 
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                Main event:{" "}
-                {
-                  s.event
-                    ?.name
-                }
-              </p>
+  <span className="rounded-full bg-yellow-500/20 px-3 py-1 text-xs">
+    Pending Review
+  </span>
+</div>
 
-              <p className="text-sm text-slate-600 dark:text-slate-300">
-                {
-                  s.description
-                }
-              </p>
+<p className="mt-1 text-sm text-slate-300">
+  {s.description}
+</p>
 
-              <div className="mt-3 grid gap-2 md:grid-cols-[1fr_auto_auto]">
-                <input
-                  placeholder="Rejection reason"
-                  value={
-                    reason[
-                      s._id
-                    ] || ""
-                  }
-                  onChange={(
-                    ev
-                  ) =>
-                    setReason(
-                      (
-                        r
-                      ) => ({
-                        ...r,
-                        [s._id]:
-                          ev
-                            .target
-                            .value,
-                      })
-                    )
-                  }
-                  className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-950"
-                />
+<div className="mt-4 grid gap-2 md:grid-cols-2 text-sm">
+  <p>
+    <strong>
+      Type:
+    </strong>{" "}
+    {s.type}
+  </p>
 
-                <button
-                  onClick={() =>
-                    approveSubevent(
-                      s._id
-                    )
-                  }
-                  className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white"
-                >
-                  Approve
-                </button>
+  <p>
+    <strong>
+      Venue:
+    </strong>{" "}
+    {s.venue?.name ||
+      "Not selected"}
+  </p>
 
-                <button
-                  onClick={() =>
-                    rejectSubevent(
-                      s._id
-                    )
-                  }
-                  className="rounded-md bg-rose-600 px-3 py-2 text-sm font-medium text-white"
-                >
-                  Reject
-                </button>
-              </div>
+  <p>
+    <strong>
+      Start Time:
+    </strong>{" "}
+    {s.startAt
+      ? new Date(
+          s.startAt
+        ).toLocaleString()
+      : "N/A"}
+  </p>
+
+  <p>
+    <strong>
+      End Time:
+    </strong>{" "}
+    {s.endAt
+      ? new Date(
+          s.endAt
+        ).toLocaleString()
+      : "N/A"}
+  </p>
+
+  <p>
+    <strong>
+      Eligibility:
+    </strong>{" "}
+    {Array.isArray(s.eligibility)
+  ? s.eligibility.join(", ")
+  : s.eligibility || "N/A"}
+  </p>
+
+  <p>
+    <strong>
+      Max Participants:
+    </strong>{" "}
+    {
+      s.maxParticipants
+    }
+  </p>
+
+  <p>
+    <strong>
+      Entry Fee:
+    </strong>{" "}
+    ₹{s.entryFee}
+  </p>
+
+  <p>
+    <strong>
+      Event Manager:
+    </strong>{" "}
+    {
+      s.eventManager
+    }
+  </p>
+
+  <p>
+    <strong>
+      Manager Phone:
+    </strong>{" "}
+    {
+      s.managerPhone
+    }
+  </p>
+
+  <p>
+    <strong>
+      Prize Pool:
+    </strong>{" "}
+    {s.prizePool ||
+      "N/A"}
+  </p>
+  <div className="rounded-lg border border-slate-700 p-3">
+  <p className="font-semibold">
+    Attendance & Certificate
+  </p>
+
+  <p>
+    Sessions:
+    {" "}
+    {s.totalSessions || 1}
+  </p>
+
+  <p>
+    Rule:
+    {" "}
+    {s.certificateSettings?.mode ===
+    "attendance_percentage"
+      ? `Minimum ${s.certificateSettings?.minimumPercentage}% attendance required`
+      : "At least one attendance required"}
+  </p>
+</div>
+<div className="mt-4 flex gap-5">
+  <label className="flex items-center gap-2">
+    <input
+      type="radio"
+      name={`standalone-${s._id}`}
+      onChange={() =>
+        setStandaloneReviews((prev) => ({
+          ...prev,
+          [s._id]: {
+            ...(prev[s._id] || {}),
+            action: "approved",
+          },
+        }))
+      }
+    />
+    Approve
+  </label>
+
+  <label className="flex items-center gap-2">
+    <input
+      type="radio"
+      name={`standalone-${s._id}`}
+      onChange={() =>
+        setStandaloneReviews((prev) => ({
+          ...prev,
+          [s._id]: {
+            ...(prev[s._id] || {}),
+            action: "revision_requested",
+          },
+        }))
+      }
+    />
+    Request Revision
+  </label>
+
+  <label className="flex items-center gap-2">
+    <input
+      type="radio"
+      name={`standalone-${s._id}`}
+      onChange={() =>
+        setStandaloneReviews((prev) => ({
+          ...prev,
+          [s._id]: {
+            ...(prev[s._id] || {}),
+            action: "rejected",
+          },
+        }))
+      }
+    />
+    Reject
+  </label>
+</div>
+
+<textarea
+  rows={3}
+  placeholder="Revision / rejection reason"
+  className="mt-3 w-full rounded-md border border-slate-200 p-2 text-sm dark:border-slate-800 dark:bg-slate-950"
+  value={
+    standaloneReviews?.[s._id]?.reason || ""
+  }
+  onChange={(e) =>
+    setStandaloneReviews((prev) => ({
+      ...prev,
+      [s._id]: {
+        ...(prev[s._id] || {}),
+        reason: e.target.value,
+      },
+    }))
+  }
+/>
+
+<button
+  onClick={() =>
+    reviewStandaloneSubevent(s)
+  }
+  className="mt-3 rounded-md bg-blue-600 px-4 py-2 text-white"
+>
+  Submit Review
+</button>
+</div>
+
             </div>
+            
           )
         )}
       </div>

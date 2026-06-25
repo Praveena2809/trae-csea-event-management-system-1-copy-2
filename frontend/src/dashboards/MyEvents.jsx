@@ -5,6 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 export default function MyEvents() {
   const [events, setEvents] = useState([]);
+  const [editingEvent, setEditingEvent] =
+  useState(null);
   const [
     editingSubevent,
     setEditingSubevent,
@@ -434,12 +436,11 @@ certificateSettings: {
     try {
       // await api.put(
       //   `/subevents/${editingSubevent._id}`,
-      api.put(
+      await api.put(
         `/events/subevents/${editingSubevent._id}`,
         {
           ...editingSubevent,
-          status:
-            "pending_review",
+          status: "pending_review",
         }
       );
 
@@ -457,6 +458,27 @@ certificateSettings: {
         err?.response?.data
           ?.message ||
           "Failed"
+      );
+    }
+  };
+  const resubmitEvent = async () => {
+    try {
+      await api.put(
+        `/events/${editingEvent._id}`,
+        editingEvent
+      );
+  
+      toast.success(
+        "Event resubmitted to HOD"
+      );
+  
+      setEditingEvent(null);
+  
+      await load();
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message ||
+        "Failed"
       );
     }
   };
@@ -558,7 +580,21 @@ certificateSettings: {
 
 {/* Right Side Buttons */}
 <div className="flex flex-wrap justify-start gap-3 md:justify-end">
-
+{[
+  "rejected",
+  "revision_requested",
+].includes(e.status) && (
+<button
+  onClick={() =>
+    navigate(
+      `/dashboard/coordinator/edit-event/${e._id}`
+    )
+  }
+  className="rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-white"
+>
+  Edit & Resubmit Event
+</button>
+)}
   {e.status ===
     "approved" && (
     <>
@@ -630,6 +666,7 @@ certificateSettings: {
     <div className="rounded-md bg-orange-100 px-4 py-2 text-sm font-medium text-orange-700">
       Cancellation Request Sent to HOD
     </div>
+    
   )}
 
   {e.status ===
@@ -646,7 +683,56 @@ certificateSettings: {
     </div>
   )}
 </div>
+{/* {editingEvent?._id === e._id && (
+  <div className="mt-4 grid gap-4">
 
+    <input
+      value={editingEvent.name || ""}
+      onChange={(ev) =>
+        setEditingEvent({
+          ...editingEvent,
+          name: ev.target.value,
+        })
+      }
+      className="rounded border p-2"
+    />
+
+    <textarea
+      value={
+        editingEvent.description || ""
+      }
+      onChange={(ev) =>
+        setEditingEvent({
+          ...editingEvent,
+          description:
+            ev.target.value,
+        })
+      }
+      className="rounded border p-2"
+    />
+
+    <input
+      value={
+        editingEvent.budgetEstimate || ""
+      }
+      onChange={(ev) =>
+        setEditingEvent({
+          ...editingEvent,
+          budgetEstimate:
+            ev.target.value,
+        })
+      }
+      className="rounded border p-2"
+    />
+
+    <button
+      onClick={resubmitEvent}
+      className="rounded bg-yellow-500 px-4 py-2 text-white"
+    >
+      Resubmit Event
+    </button>
+  </div>
+)} */}
       </div>
       {creatingFor ===
   e._id && (
@@ -1118,7 +1204,12 @@ certificateSettings: {
  sub.rejectionReason ||
  "No feedback"}
   </p>
-
+  <button
+  onClick={() => openEditSubevent(sub)}
+  className="rounded-md bg-yellow-500 px-4 py-2 text-white font-medium"
+>
+  Edit & Resubmit
+</button>
   {e.hodFeedback && (
     <div className="rounded-md border border-yellow-600 bg-yellow-950/20 p-3">
       <p className="font-semibold text-yellow-300">
@@ -1131,6 +1222,151 @@ certificateSettings: {
     </div>
   )}
 </div>}
+{editingSubevent?._id === sub._id && (
+  <div className="mt-4 space-y-3 rounded-lg border border-yellow-500 p-4">
+
+    <input
+      type="text"
+      value={editingSubevent.name || ""}
+      onChange={(e) =>
+        setEditingSubevent({
+          ...editingSubevent,
+          name: e.target.value,
+        })
+      }
+      className="w-full rounded border p-2 text-black"
+      placeholder="Subevent Name"
+    />
+
+    <textarea
+      value={editingSubevent.description || ""}
+      onChange={(e) =>
+        setEditingSubevent({
+          ...editingSubevent,
+          description: e.target.value,
+        })
+      }
+      className="w-full rounded border p-2 text-black"
+      placeholder="Description"
+    />
+
+    <input
+      type="datetime-local"
+      value={editingSubevent.startAt || ""}
+      onChange={(e) =>
+        setEditingSubevent({
+          ...editingSubevent,
+          startAt: e.target.value,
+        })
+      }
+      className="w-full rounded border p-2 text-black"
+    />
+
+    <input
+      type="datetime-local"
+      value={editingSubevent.endAt || ""}
+      onChange={(e) =>
+        setEditingSubevent({
+          ...editingSubevent,
+          endAt: e.target.value,
+        })
+      }
+      className="w-full rounded border p-2 text-black"
+    />
+<select
+  value={editingSubevent.venue || ""}
+  onChange={(e) =>
+    setEditingSubevent({
+      ...editingSubevent,
+      venue: e.target.value,
+    })
+  }
+  className="w-full rounded border p-2 text-black"
+>
+  <option value="">Select Venue</option>
+
+  {venues.map((v) => (
+    <option key={v._id} value={v._id}>
+      {v.name}
+    </option>
+  ))}
+</select>
+<input
+  type="number"
+  value={editingSubevent.maxParticipants || ""}
+  onChange={(e) =>
+    setEditingSubevent({
+      ...editingSubevent,
+      maxParticipants: e.target.value,
+    })
+  }
+  className="w-full rounded border p-2 text-black"
+  placeholder="Max Participants"
+/>
+<input
+  type="number"
+  value={editingSubevent.entryFee || ""}
+  onChange={(e) =>
+    setEditingSubevent({
+      ...editingSubevent,
+      entryFee: e.target.value,
+    })
+  }
+  className="w-full rounded border p-2 text-black"
+  placeholder="Entry Fee"
+/>
+<input
+  type="text"
+  value={editingSubevent.eventManager || ""}
+  onChange={(e) =>
+    setEditingSubevent({
+      ...editingSubevent,
+      eventManager: e.target.value,
+    })
+  }
+  className="w-full rounded border p-2 text-black"
+  placeholder="Event Manager"
+/>
+<input
+  type="text"
+  value={editingSubevent.managerPhone || ""}
+  onChange={(e) =>
+    setEditingSubevent({
+      ...editingSubevent,
+      managerPhone: e.target.value,
+    })
+  }
+  className="w-full rounded border p-2 text-black"
+  placeholder="Manager Phone"
+/>
+<input
+  type="number"
+  value={editingSubevent.prizePool || ""}
+  onChange={(e) =>
+    setEditingSubevent({
+      ...editingSubevent,
+      prizePool: e.target.value,
+    })
+  }
+  className="w-full rounded border p-2 text-black"
+  placeholder="Prize Pool"
+/>
+    <button
+      onClick={resubmitSubevent}
+      className="rounded bg-green-600 px-4 py-2 text-white"
+    >
+      Submit Revision
+    </button>
+
+    <button
+      onClick={() => setEditingSubevent(null)}
+      className="ml-2 rounded bg-gray-600 px-4 py-2 text-white"
+    >
+      Cancel
+    </button>
+
+  </div>
+)}
 <div className="mt-4 flex flex-wrap items-center gap-3">
 
 {/* View Feedback */}
@@ -1144,387 +1380,9 @@ certificateSettings: {
 >
   View Feedback
 </button>
-{sub.status ===
-  "revision_requested" && (
-  <button
-    onClick={() =>
-      openEditSubevent(
-        sub
-      )
-    }
-    className="rounded-xl bg-yellow-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-yellow-600"
-  >
-    Edit &
-    Resubmit
-  </button>
+
   
-)}
-      {editingSubevent?._id ===
-  sub._id && (
-    <div className="mt-4 grid gap-4 md:grid-cols-2">
 
-  {/* HOD FEEDBACK */}
-  <div className="md:col-span-2 rounded-md border border-red-500 bg-red-950/20 p-4">
-    <p className="font-semibold text-red-400">
-      HOD Revision Message
-    </p>
-
-    <p className="mt-1 text-sm text-slate-300">
-    {editingSubevent.hodFeedback ||
- editingSubevent.rejectionReason ||
- "No feedback"}
-    </p>
-  </div>
-
-  {/* TYPE */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Type
-    </label>
-
-    <select
-      value={editingSubevent.type}
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          type: e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    >
-      <option value="workshop">
-        Workshop
-      </option>
-
-      <option value="competitive">
-        Competitive
-      </option>
-    </select>
-  </div>
-
-  {/* VENUE */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Venue
-    </label>
-
-    <select
-      value={editingSubevent.venue}
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          venue: e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    >
-      <option value="">
-        Select venue
-      </option>
-
-      {venues.map((v) => (
-        <option
-          key={v._id}
-          value={v._id}
-        >
-          {v.name}
-        </option>
-      ))}
-    </select>
-  </div>
-
-  {/* NAME */}
-  <div className="md:col-span-2">
-    <label className="text-sm font-medium text-white">
-      Subevent Name
-    </label>
-
-    <input
-      value={editingSubevent.name || ""}
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          name: e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* DESCRIPTION */}
-  <div className="md:col-span-2">
-    <label className="text-sm font-medium text-white">
-      Description
-    </label>
-
-    <textarea
-      rows={3}
-      value={
-        editingSubevent.description || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          description:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* START */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Start
-    </label>
-
-    <input
-      type="datetime-local"
-      value={
-        editingSubevent.startAt || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          startAt:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* END */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      End
-    </label>
-
-    <input
-      type="datetime-local"
-      value={
-        editingSubevent.endAt || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          endAt:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* CHECK VENUE */}
-  <div className="md:col-span-2">
-    <button
-      type="button"
-      onClick={() => {}}
-      className="rounded-md border border-slate-500 px-4 py-2 text-white"
-    >
-      Check Venue Availability
-    </button>
-  </div>
-
-  {/* ELIGIBILITY */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Eligibility
-    </label>
-
-    <div>
-  <label className="text-sm font-medium text-white">
-    Eligibility
-  </label>
-
-  <div className="mt-2 space-y-2">
-    {["1", "2", "3", "4"].map(
-      (year) => (
-        <label
-          key={year}
-          className="flex items-center gap-2 text-white"
-        >
-          <input
-            type="checkbox"
-            checked={
-              editingSubevent.eligibility?.includes(
-                year
-              ) || false
-            }
-            onChange={(e) => {
-              if (e.target.checked) {
-                setEditingSubevent(
-                  (prev) => ({
-                    ...prev,
-                    eligibility: [
-                      ...(prev.eligibility ||
-                        []),
-                      year,
-                    ],
-                  })
-                );
-              } else {
-                setEditingSubevent(
-                  (prev) => ({
-                    ...prev,
-                    eligibility:
-                      prev.eligibility.filter(
-                        (y) =>
-                          y !== year
-                      ),
-                  })
-                );
-              }
-            }}
-          />
-
-          {year} Year
-        </label>
-      )
-    )}
-  </div>
-</div>
-  </div>
-
-  {/* MAX PARTICIPANTS */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Max Participants
-    </label>
-
-    <input
-      value={
-        editingSubevent.maxParticipants || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          maxParticipants:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* ENTRY FEE */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Entry Fee
-    </label>
-
-    <input
-      value={
-        editingSubevent.entryFee || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          entryFee:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* EVENT MANAGER */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Event Manager
-    </label>
-
-    <input
-      value={
-        editingSubevent.eventManager || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          eventManager:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* PHONE */}
-  <div>
-    <label className="text-sm font-medium text-white">
-      Manager Phone
-    </label>
-
-    <input
-      value={
-        editingSubevent.managerPhone || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          managerPhone:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div>
-
-  {/* PRIZE POOL */}
-  {/* <div>
-    <label className="text-sm font-medium text-white">
-      Prize Pool
-    </label>
-    <div>
-
-    <input
-      value={
-        editingSubevent.prizePool || ""
-      }
-      onChange={(e) =>
-        setEditingSubevent((prev) => ({
-          ...prev,
-          prizePool:
-            e.target.value,
-        }))
-      }
-      className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-    />
-  </div> */}
-  {/* PRIZE POOL */}
-<div>
-  <label className="text-sm font-medium text-white">
-    Prize Pool
-  </label>
-
-  <input
-    value={editingSubevent.prizePool || ""}
-    onChange={(e) =>
-      setEditingSubevent((prev) => ({
-        ...prev,
-        prizePool: e.target.value,
-      }))
-    }
-    className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-white"
-  />
-</div>
-
-  {/* RESUBMIT */}
-  <div className="md:col-span-2">
-    <button
-      onClick={
-        resubmitSubevent
-      }
-      className="rounded-md bg-yellow-500 px-4 py-2 text-white hover:bg-yellow-600"
-    >
-      Resubmit to HOD
-    </button>
-  </div>
-</div>
-)}
- 
 {/* Load Participants */}
 <button
   onClick={() =>
